@@ -3,113 +3,113 @@ use std::str::FromStr;
 #[derive(Debug, Clone, PartialEq)]
 pub enum CubeMove {
     /// Right face clockwise 90° (R)
-    RIGHT_TURN,
+    RightTurn,
     /// Right face clockwise 180° (R2)
-    RIGHT_TURN_DOUBLE,
+    RightTurnDouble,
     /// Right face counter-clockwise 90° (R')
-    RIGHT_TURN_PRIME,
+    RightTurnPrime,
     /// Up face clockwise 90° (U)
-    UP_TURN,
+    UpTurn,
     /// Up face counter-clockwise 90° (U')
-    UP_TURN_PRIME,
+    UpTurnPrime,
     /// Up face clockwise 180° (U2)
-    UP_TURN_DOUBLE,
+    UpTurnDouble,
     /// Front face clockwise 90° (F)
-    FRONT_TURN,
+    FrontTurn,
     /// Front face clockwise 180° (F2)
-    FRONT_TURN_DOUBLE,
+    FrontTurnDouble,
     /// Front face counter-clockwise 90° (F')
-    FRONT_TURN_PRIME,
+    FrontTurnPrime,
     /// Down face clockwise 90° (D)
-    DOWN_TURN,
+    DownTurn,
     /// Down face clockwise 180° (D2)
-    DOWN_TURN_DOUBLE,
+    DownTurnDouble,
     /// Down face counter-clockwise 90° (D')
-    DOWN_TURN_PRIME,
+    DownTurnPrime,
     /// Left face clockwise 90° (L)
-    LEFT_TURN,
+    LeftTurn,
     /// Left face clockwise 180° (L2)
-    LEFT_TURN_DOUBLE,
+    LeftTurnDouble,
     /// Left face counter-clockwise 90° (L')
-    LEFT_TURN_PRIME,
+    LeftTurnPrime,
     /// Back face clockwise 90° (B)
-    BACK_TURN,
+    BackTurn,
     /// Back face clockwise 180° (B2)
-    BACK_TURN_DOUBLE,
+    BackTurnDouble,
     /// Back face counter-clockwise 90° (B')
-    BACK_TURN_PRIME,
+    BackTurnPrime,
     /// Middle slice (between L and R) 90° (M)
-    MIDDLE_TURN,
+    MiddleTurn,
     /// Middle slice (between L and R) 180° (M2)
-    MIDDLE_TURN_DOUBLE,
+    MiddleTurnDouble,
     /// Middle slice (between L and R) counter-clockwise 90° (M')
-    MIDDLE_TURN_PRIME,
+    MiddleTurnPrime,
     /// Standing slice (between F and B) 90° (S)
-    STANDING_TURN,
+    StandingTurn,
     /// Standing slice (between F and B) 180° (S2)
-    STANDING_TURN_DOUBLE,
+    StandingTurnDouble,
     /// Standing slice (between F and B) counter-clockwise 90° (S')
-    STANDING_TURN_PRIME,
+    StandingTurnPrime,
     /// Equatorial slice (between U and D) 90° (E)
-    EQUATORIAL_TURN,
+    EquatorialTurn,
     /// Equatorial slice (between U and D) 180° (E2)
-    EQUATORIAL_TURN_DOUBLE,
+    EquatorialTurnDouble,
     /// Equatorial slice (between U and D) counter-clockwise 90° (E')
-    EQUATORIAL_TURN_PRIME,
+    EquatorialTurnPrime,
     /// Rotate entire cube on R axis clockwise 90° (X)
-    X_ROTATION,
+    XRotation,
     /// Rotate entire cube on R axis counter-clockwise 90° (X')
-    X_ROTATION_PRIME,
+    XRotationPrime,
     /// Rotate entire cube on R axis 180° (X2)
-    X_ROTATION_DOUBLE,
+    XRotationDouble,
     /// Rotate entire cube on U axis clockwise 90° (Y)
-    Y_ROTATION,
+    YRotation,
     /// Rotate entire cube on U axis counter-clockwise 90° (Y')
-    Y_ROTATION_PRIME,
+    YRotationPrime,
     /// Rotate entire cube on U axis 180° (Y2)
-    Y_ROTATION_DOUBLE,
+    YRotationDouble,
     /// Rotate entire cube on F axis clockwise 90° (Z)
-    Z_ROTATION,
+    ZRotation,
     /// Rotate entire cube on F axis counter-clockwise 90° (Z')
-    Z_ROTATION_PRIME,
+    ZRotationPrime,
     /// Rotate entire cube on F axis 180° (Z2)
-    Z_ROTATION_DOUBLE,
+    ZRotationDouble,
     /// Right two layers clockwise 90° (r)
-    RIGHT_WIDE_TURN,
+    RightWideTurn,
     /// Right two layers clockwise 180° (r2)
-    RIGHT_WIDE_TURN_DOUBLE,
+    RightWideTurnDouble,
     /// Right two layers counter-clockwise 90° (r')
-    RIGHT_WIDE_TURN_PRIME,
+    RightWideTurnPrime,
     /// Up two layers clockwise 90° (u)
-    UP_WIDE_TURN,
+    UpWideTurn,
     /// Up two layers counter-clockwise 90° (u')
-    UP_WIDE_TURN_PRIME,
+    UpWideTurnPrime,
     /// Up two layers clockwise 180° (u2)
-    UP_WIDE_TURN_DOUBLE,
+    UpWideTurnDouble,
     /// Front two layers clockwise 90° (f)
-    FRONT_WIDE_TURN,
+    FrontWideTurn,
     /// Front two layers clockwise 180° (f2)
-    FRONT_WIDE_TURN_DOUBLE,
+    FrontWideTurnDouble,
     /// Front two layers counter-clockwise 90° (f')
-    FRONT_WIDE_TURN_PRIME,
+    FrontWideTurnPrime,
     /// Down two layers clockwise 90° (d)
-    DOWN_WIDE_TURN,
+    DownWideTurn,
     /// Down two layers clockwise 180° (d2)
-    DOWN_WIDE_TURN_DOUBLE,
+    DownWideTurnDouble,
     /// Down two layers counter-clockwise 90° (d')
-    DOWN_WIDE_TURN_PRIME,
+    DownWideTurnPrime,
     /// Left two layers clockwise 90° (l)
-    LEFT_WIDE_TURN,
+    LeftWideTurn,
     /// Left two layers clockwise 180° (l2)
-    LEFT_WIDE_TURN_DOUBLE,
+    LeftWideTurnDouble,
     /// Left two layers counter-clockwise 90° (l')
-    LEFT_WIDE_TURN_PRIME,
+    LeftWideTurnPrime,
     /// Back two layers clockwise 90° (b)
-    BACK_WIDE_TURN,
+    BackWideTurn,
     /// Back two layers clockwise 180° (b2)
-    BACK_WIDE_TURN_DOUBLE,
+    BackWideTurnDouble,
     /// Back two layers counter-clockwise 90° (b')
-    BACK_WIDE_TURN_PRIME,
+    BackWideTurnPrime,
 }
 
 impl FromStr for CubeMove {
@@ -117,61 +117,61 @@ impl FromStr for CubeMove {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "R" => Some(CubeMove::RIGHT_TURN),
-            "R2" => Some(CubeMove::RIGHT_TURN_DOUBLE),
-            "R'" => Some(CubeMove::RIGHT_TURN_PRIME),
-            "U" => Some(CubeMove::UP_TURN),
-            "U'" => Some(CubeMove::UP_TURN_PRIME),
-            "U2" => Some(CubeMove::UP_TURN_DOUBLE),
-            "F" => Some(CubeMove::FRONT_TURN),
-            "F2" => Some(CubeMove::FRONT_TURN_DOUBLE),
-            "F'" => Some(CubeMove::FRONT_TURN_PRIME),
-            "D" => Some(CubeMove::DOWN_TURN),
-            "D2" => Some(CubeMove::DOWN_TURN_DOUBLE),
-            "D'" => Some(CubeMove::DOWN_TURN_PRIME),
-            "L" => Some(CubeMove::LEFT_TURN),
-            "L2" => Some(CubeMove::LEFT_TURN_DOUBLE),
-            "L'" => Some(CubeMove::LEFT_TURN_PRIME),
-            "B" => Some(CubeMove::BACK_TURN),
-            "B2" => Some(CubeMove::BACK_TURN_DOUBLE),
-            "B'" => Some(CubeMove::BACK_TURN_PRIME),
-            "M" => Some(CubeMove::MIDDLE_TURN),
-            "M2" => Some(CubeMove::MIDDLE_TURN_DOUBLE),
-            "M'" => Some(CubeMove::MIDDLE_TURN_PRIME),
-            "S" => Some(CubeMove::STANDING_TURN),
-            "S2" => Some(CubeMove::STANDING_TURN_DOUBLE),
-            "S'" => Some(CubeMove::STANDING_TURN_PRIME),
-            "E" => Some(CubeMove::EQUATORIAL_TURN),
-            "E2" => Some(CubeMove::EQUATORIAL_TURN_DOUBLE),
-            "E'" => Some(CubeMove::EQUATORIAL_TURN_PRIME),
-            "X" => Some(CubeMove::X_ROTATION),
-            "X'" => Some(CubeMove::X_ROTATION_PRIME),
-            "X2" => Some(CubeMove::X_ROTATION_DOUBLE),
-            "Y" => Some(CubeMove::Y_ROTATION),
-            "Y'" => Some(CubeMove::Y_ROTATION_PRIME),
-            "Y2" => Some(CubeMove::Y_ROTATION_DOUBLE),
-            "Z" => Some(CubeMove::Z_ROTATION),
-            "Z'" => Some(CubeMove::Z_ROTATION_PRIME),
-            "Z2" => Some(CubeMove::Z_ROTATION_DOUBLE),
+            "R" => Some(CubeMove::RightTurn),
+            "R2" => Some(CubeMove::RightTurnDouble),
+            "R'" => Some(CubeMove::RightTurnPrime),
+            "U" => Some(CubeMove::UpTurn),
+            "U'" => Some(CubeMove::UpTurnPrime),
+            "U2" => Some(CubeMove::UpTurnDouble),
+            "F" => Some(CubeMove::FrontTurn),
+            "F2" => Some(CubeMove::FrontTurnDouble),
+            "F'" => Some(CubeMove::FrontTurnPrime),
+            "D" => Some(CubeMove::DownTurn),
+            "D2" => Some(CubeMove::DownTurnDouble),
+            "D'" => Some(CubeMove::DownTurnPrime),
+            "L" => Some(CubeMove::LeftTurn),
+            "L2" => Some(CubeMove::LeftTurnDouble),
+            "L'" => Some(CubeMove::LeftTurnPrime),
+            "B" => Some(CubeMove::BackTurn),
+            "B2" => Some(CubeMove::BackTurnDouble),
+            "B'" => Some(CubeMove::BackTurnPrime),
+            "M" => Some(CubeMove::MiddleTurn),
+            "M2" => Some(CubeMove::MiddleTurnDouble),
+            "M'" => Some(CubeMove::MiddleTurnPrime),
+            "S" => Some(CubeMove::StandingTurn),
+            "S2" => Some(CubeMove::StandingTurnDouble),
+            "S'" => Some(CubeMove::StandingTurnPrime),
+            "E" => Some(CubeMove::EquatorialTurn),
+            "E2" => Some(CubeMove::EquatorialTurnDouble),
+            "E'" => Some(CubeMove::EquatorialTurnPrime),
+            "X" => Some(CubeMove::XRotation),
+            "X'" => Some(CubeMove::XRotationPrime),
+            "X2" => Some(CubeMove::XRotationDouble),
+            "Y" => Some(CubeMove::YRotation),
+            "Y'" => Some(CubeMove::YRotationPrime),
+            "Y2" => Some(CubeMove::YRotationDouble),
+            "Z" => Some(CubeMove::ZRotation),
+            "Z'" => Some(CubeMove::ZRotationPrime),
+            "Z2" => Some(CubeMove::ZRotationDouble),
             // Wide CubeMoves
-            "r" => Some(CubeMove::RIGHT_WIDE_TURN),
-            "r2" => Some(CubeMove::RIGHT_WIDE_TURN_DOUBLE),
-            "r'" => Some(CubeMove::RIGHT_WIDE_TURN_PRIME),
-            "u" => Some(CubeMove::UP_WIDE_TURN),
-            "u'" => Some(CubeMove::UP_WIDE_TURN_PRIME),
-            "u2" => Some(CubeMove::UP_WIDE_TURN_DOUBLE),
-            "f" => Some(CubeMove::FRONT_WIDE_TURN),
-            "f2" => Some(CubeMove::FRONT_WIDE_TURN_DOUBLE),
-            "f'" => Some(CubeMove::FRONT_WIDE_TURN_PRIME),
-            "d" => Some(CubeMove::DOWN_WIDE_TURN),
-            "d2" => Some(CubeMove::DOWN_WIDE_TURN_DOUBLE),
-            "d'" => Some(CubeMove::DOWN_WIDE_TURN_PRIME),
-            "l" => Some(CubeMove::LEFT_WIDE_TURN),
-            "l2" => Some(CubeMove::LEFT_WIDE_TURN_DOUBLE),
-            "l'" => Some(CubeMove::LEFT_WIDE_TURN_PRIME),
-            "b" => Some(CubeMove::BACK_WIDE_TURN),
-            "b2" => Some(CubeMove::BACK_WIDE_TURN_DOUBLE),
-            "b'" => Some(CubeMove::BACK_WIDE_TURN_PRIME),
+            "r" => Some(CubeMove::RightWideTurn),
+            "r2" => Some(CubeMove::RightWideTurnDouble),
+            "r'" => Some(CubeMove::RightWideTurnPrime),
+            "u" => Some(CubeMove::UpWideTurn),
+            "u'" => Some(CubeMove::UpWideTurnPrime),
+            "u2" => Some(CubeMove::UpWideTurnDouble),
+            "f" => Some(CubeMove::FrontWideTurn),
+            "f2" => Some(CubeMove::FrontWideTurnDouble),
+            "f'" => Some(CubeMove::FrontWideTurnPrime),
+            "d" => Some(CubeMove::DownWideTurn),
+            "d2" => Some(CubeMove::DownWideTurnDouble),
+            "d'" => Some(CubeMove::DownWideTurnPrime),
+            "l" => Some(CubeMove::LeftWideTurn),
+            "l2" => Some(CubeMove::LeftWideTurnDouble),
+            "l'" => Some(CubeMove::LeftWideTurnPrime),
+            "b" => Some(CubeMove::BackWideTurn),
+            "b2" => Some(CubeMove::BackWideTurnDouble),
+            "b'" => Some(CubeMove::BackWideTurnPrime),
             _ => None,
         }
         .ok_or(())
@@ -181,60 +181,60 @@ impl FromStr for CubeMove {
 impl std::fmt::Display for CubeMove {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let s = match self {
-            CubeMove::RIGHT_TURN => "R",
-            CubeMove::RIGHT_TURN_DOUBLE => "R2",
-            CubeMove::RIGHT_TURN_PRIME => "R'",
-            CubeMove::UP_TURN => "U",
-            CubeMove::UP_TURN_PRIME => "U'",
-            CubeMove::UP_TURN_DOUBLE => "U2",
-            CubeMove::FRONT_TURN => "F",
-            CubeMove::FRONT_TURN_DOUBLE => "F2",
-            CubeMove::FRONT_TURN_PRIME => "F'",
-            CubeMove::DOWN_TURN => "D",
-            CubeMove::DOWN_TURN_DOUBLE => "D2",
-            CubeMove::DOWN_TURN_PRIME => "D'",
-            CubeMove::LEFT_TURN => "L",
-            CubeMove::LEFT_TURN_DOUBLE => "L2",
-            CubeMove::LEFT_TURN_PRIME => "L'",
-            CubeMove::BACK_TURN => "B",
-            CubeMove::BACK_TURN_DOUBLE => "B2",
-            CubeMove::BACK_TURN_PRIME => "B'",
-            CubeMove::MIDDLE_TURN => "M",
-            CubeMove::MIDDLE_TURN_DOUBLE => "M2",
-            CubeMove::MIDDLE_TURN_PRIME => "M'",
-            CubeMove::STANDING_TURN => "S",
-            CubeMove::STANDING_TURN_DOUBLE => "S2",
-            CubeMove::STANDING_TURN_PRIME => "S'",
-            CubeMove::EQUATORIAL_TURN => "E",
-            CubeMove::EQUATORIAL_TURN_DOUBLE => "E2",
-            CubeMove::EQUATORIAL_TURN_PRIME => "E'",
-            CubeMove::X_ROTATION => "X",
-            CubeMove::X_ROTATION_PRIME => "X'",
-            CubeMove::X_ROTATION_DOUBLE => "X2",
-            CubeMove::Y_ROTATION => "Y",
-            CubeMove::Y_ROTATION_PRIME => "Y'",
-            CubeMove::Y_ROTATION_DOUBLE => "Y2",
-            CubeMove::Z_ROTATION => "Z",
-            CubeMove::Z_ROTATION_PRIME => "Z'",
-            CubeMove::Z_ROTATION_DOUBLE => "Z2",
-            CubeMove::RIGHT_WIDE_TURN => "r",
-            CubeMove::RIGHT_WIDE_TURN_DOUBLE => "r2",
-            CubeMove::RIGHT_WIDE_TURN_PRIME => "r'",
-            CubeMove::UP_WIDE_TURN => "u",
-            CubeMove::UP_WIDE_TURN_PRIME => "u'",
-            CubeMove::UP_WIDE_TURN_DOUBLE => "u2",
-            CubeMove::FRONT_WIDE_TURN => "f",
-            CubeMove::FRONT_WIDE_TURN_DOUBLE => "f2",
-            CubeMove::FRONT_WIDE_TURN_PRIME => "f'",
-            CubeMove::DOWN_WIDE_TURN => "d",
-            CubeMove::DOWN_WIDE_TURN_DOUBLE => "d2",
-            CubeMove::DOWN_WIDE_TURN_PRIME => "d'",
-            CubeMove::LEFT_WIDE_TURN => "l",
-            CubeMove::LEFT_WIDE_TURN_DOUBLE => "l2",
-            CubeMove::LEFT_WIDE_TURN_PRIME => "l'",
-            CubeMove::BACK_WIDE_TURN => "b",
-            CubeMove::BACK_WIDE_TURN_DOUBLE => "b2",
-            CubeMove::BACK_WIDE_TURN_PRIME => "b'",
+            CubeMove::RightTurn => "R",
+            CubeMove::RightTurnDouble => "R2",
+            CubeMove::RightTurnPrime => "R'",
+            CubeMove::UpTurn => "U",
+            CubeMove::UpTurnPrime => "U'",
+            CubeMove::UpTurnDouble => "U2",
+            CubeMove::FrontTurn => "F",
+            CubeMove::FrontTurnDouble => "F2",
+            CubeMove::FrontTurnPrime => "F'",
+            CubeMove::DownTurn => "D",
+            CubeMove::DownTurnDouble => "D2",
+            CubeMove::DownTurnPrime => "D'",
+            CubeMove::LeftTurn => "L",
+            CubeMove::LeftTurnDouble => "L2",
+            CubeMove::LeftTurnPrime => "L'",
+            CubeMove::BackTurn => "B",
+            CubeMove::BackTurnDouble => "B2",
+            CubeMove::BackTurnPrime => "B'",
+            CubeMove::MiddleTurn => "M",
+            CubeMove::MiddleTurnDouble => "M2",
+            CubeMove::MiddleTurnPrime => "M'",
+            CubeMove::StandingTurn => "S",
+            CubeMove::StandingTurnDouble => "S2",
+            CubeMove::StandingTurnPrime => "S'",
+            CubeMove::EquatorialTurn => "E",
+            CubeMove::EquatorialTurnDouble => "E2",
+            CubeMove::EquatorialTurnPrime => "E'",
+            CubeMove::XRotation => "X",
+            CubeMove::XRotationPrime => "X'",
+            CubeMove::XRotationDouble => "X2",
+            CubeMove::YRotation => "Y",
+            CubeMove::YRotationPrime => "Y'",
+            CubeMove::YRotationDouble => "Y2",
+            CubeMove::ZRotation => "Z",
+            CubeMove::ZRotationPrime => "Z'",
+            CubeMove::ZRotationDouble => "Z2",
+            CubeMove::RightWideTurn => "r",
+            CubeMove::RightWideTurnDouble => "r2",
+            CubeMove::RightWideTurnPrime => "r'",
+            CubeMove::UpWideTurn => "u",
+            CubeMove::UpWideTurnPrime => "u'",
+            CubeMove::UpWideTurnDouble => "u2",
+            CubeMove::FrontWideTurn => "f",
+            CubeMove::FrontWideTurnDouble => "f2",
+            CubeMove::FrontWideTurnPrime => "f'",
+            CubeMove::DownWideTurn => "d",
+            CubeMove::DownWideTurnDouble => "d2",
+            CubeMove::DownWideTurnPrime => "d'",
+            CubeMove::LeftWideTurn => "l",
+            CubeMove::LeftWideTurnDouble => "l2",
+            CubeMove::LeftWideTurnPrime => "l'",
+            CubeMove::BackWideTurn => "b",
+            CubeMove::BackWideTurnDouble => "b2",
+            CubeMove::BackWideTurnPrime => "b'",
         };
         write!(f, "{}", s)
     }
@@ -246,13 +246,13 @@ mod tests {
     fn test_cube_move_display() {
         use super::CubeMove;
 
-        let mv = CubeMove::RIGHT_TURN;
+        let mv = CubeMove::RightTurn;
         assert_eq!(mv.to_string(), "R");
 
-        let mv = CubeMove::UP_TURN_PRIME;
+        let mv = CubeMove::UpTurnPrime;
         assert_eq!(mv.to_string(), "U'");
 
-        let mv = CubeMove::FRONT_WIDE_TURN_DOUBLE;
+        let mv = CubeMove::FrontWideTurnDouble;
         assert_eq!(mv.to_string(), "f2");
     }
 }

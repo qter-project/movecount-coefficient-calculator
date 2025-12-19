@@ -2,12 +2,12 @@ use std::str::FromStr;
 
 use crate::cube_move::CubeMove;
 
-pub(crate) struct MoveParser<I> {
-    pub(crate) iter: I,
+pub struct MoveParser<I> {
+    pub iter: I,
 }
 
 impl<I> MoveParser<I> {
-    pub(crate) fn new(iter: I) -> Self {
+    pub fn new(iter: I) -> Self {
         MoveParser { iter }
     }
 }
@@ -35,7 +35,7 @@ where
     }
 }
 
-pub(crate) fn parse_moves<I>(iter: I) -> MoveParser<I::IntoIter>
+pub fn parse_moves<I>(iter: I) -> MoveParser<I::IntoIter>
 where
     I: IntoIterator,
     I::Item: AsRef<str>,
@@ -57,11 +57,11 @@ mod tests {
 
         assert_eq!(parsed_moves.len(), 6);
         assert!(parsed_moves.iter().all(|m| m.is_ok()));
-        assert_eq!(parsed_moves[0].as_ref().unwrap(), &CubeMove::RIGHT_TURN);
-        assert_eq!(parsed_moves[1].as_ref().unwrap(), &CubeMove::UP_TURN_PRIME);
+        assert_eq!(parsed_moves[0].as_ref().unwrap(), &CubeMove::RightTurn);
+        assert_eq!(parsed_moves[1].as_ref().unwrap(), &CubeMove::UpTurnPrime);
         assert_eq!(
             parsed_moves[2].as_ref().unwrap(),
-            &CubeMove::FRONT_TURN_DOUBLE
+            &CubeMove::FrontTurnDouble
         );
     }
 
@@ -73,8 +73,8 @@ mod tests {
             .unwrap();
 
         assert_eq!(parsed_moves.len(), 6);
-        assert_eq!(parsed_moves[0], CubeMove::RIGHT_TURN);
-        assert_eq!(parsed_moves[1], CubeMove::UP_TURN_PRIME);
+        assert_eq!(parsed_moves[0], CubeMove::RightTurn);
+        assert_eq!(parsed_moves[1], CubeMove::UpTurnPrime);
     }
 
     #[test]
@@ -86,14 +86,14 @@ mod tests {
             .unwrap();
 
         assert_eq!(parsed.len(), 18);
-        assert_eq!(parsed[0], CubeMove::RIGHT_TURN);
-        assert_eq!(parsed[1], CubeMove::RIGHT_TURN_DOUBLE);
-        assert_eq!(parsed[2], CubeMove::RIGHT_TURN_PRIME);
-        assert_eq!(parsed[3], CubeMove::UP_TURN);
-        assert_eq!(parsed[6], CubeMove::FRONT_TURN);
-        assert_eq!(parsed[9], CubeMove::DOWN_TURN);
-        assert_eq!(parsed[12], CubeMove::LEFT_TURN);
-        assert_eq!(parsed[15], CubeMove::BACK_TURN);
+        assert_eq!(parsed[0], CubeMove::RightTurn);
+        assert_eq!(parsed[1], CubeMove::RightTurnDouble);
+        assert_eq!(parsed[2], CubeMove::RightTurnPrime);
+        assert_eq!(parsed[3], CubeMove::UpTurn);
+        assert_eq!(parsed[6], CubeMove::FrontTurn);
+        assert_eq!(parsed[9], CubeMove::DownTurn);
+        assert_eq!(parsed[12], CubeMove::LeftTurn);
+        assert_eq!(parsed[15], CubeMove::BackTurn);
     }
 
     #[test]
@@ -104,11 +104,11 @@ mod tests {
             .unwrap();
 
         assert_eq!(parsed.len(), 9);
-        assert_eq!(parsed[0], CubeMove::MIDDLE_TURN);
-        assert_eq!(parsed[1], CubeMove::MIDDLE_TURN_DOUBLE);
-        assert_eq!(parsed[2], CubeMove::MIDDLE_TURN_PRIME);
-        assert_eq!(parsed[3], CubeMove::STANDING_TURN);
-        assert_eq!(parsed[6], CubeMove::EQUATORIAL_TURN);
+        assert_eq!(parsed[0], CubeMove::MiddleTurn);
+        assert_eq!(parsed[1], CubeMove::MiddleTurnDouble);
+        assert_eq!(parsed[2], CubeMove::MiddleTurnPrime);
+        assert_eq!(parsed[3], CubeMove::StandingTurn);
+        assert_eq!(parsed[6], CubeMove::EquatorialTurn);
     }
 
     #[test]
@@ -119,11 +119,11 @@ mod tests {
             .unwrap();
 
         assert_eq!(parsed.len(), 9);
-        assert_eq!(parsed[0], CubeMove::X_ROTATION);
-        assert_eq!(parsed[1], CubeMove::X_ROTATION_PRIME);
-        assert_eq!(parsed[2], CubeMove::X_ROTATION_DOUBLE);
-        assert_eq!(parsed[3], CubeMove::Y_ROTATION);
-        assert_eq!(parsed[6], CubeMove::Z_ROTATION);
+        assert_eq!(parsed[0], CubeMove::XRotation);
+        assert_eq!(parsed[1], CubeMove::XRotationPrime);
+        assert_eq!(parsed[2], CubeMove::XRotationDouble);
+        assert_eq!(parsed[3], CubeMove::YRotation);
+        assert_eq!(parsed[6], CubeMove::ZRotation);
     }
 
     #[test]
@@ -134,14 +134,14 @@ mod tests {
             .unwrap();
 
         assert_eq!(parsed.len(), 18);
-        assert_eq!(parsed[0], CubeMove::RIGHT_WIDE_TURN);
-        assert_eq!(parsed[1], CubeMove::RIGHT_WIDE_TURN_DOUBLE);
-        assert_eq!(parsed[2], CubeMove::RIGHT_WIDE_TURN_PRIME);
-        assert_eq!(parsed[3], CubeMove::UP_WIDE_TURN);
-        assert_eq!(parsed[6], CubeMove::FRONT_WIDE_TURN);
-        assert_eq!(parsed[9], CubeMove::DOWN_WIDE_TURN);
-        assert_eq!(parsed[12], CubeMove::LEFT_WIDE_TURN);
-        assert_eq!(parsed[15], CubeMove::BACK_WIDE_TURN);
+        assert_eq!(parsed[0], CubeMove::RightWideTurn);
+        assert_eq!(parsed[1], CubeMove::RightWideTurnDouble);
+        assert_eq!(parsed[2], CubeMove::RightWideTurnPrime);
+        assert_eq!(parsed[3], CubeMove::UpWideTurn);
+        assert_eq!(parsed[6], CubeMove::FrontWideTurn);
+        assert_eq!(parsed[9], CubeMove::DownWideTurn);
+        assert_eq!(parsed[12], CubeMove::LeftWideTurn);
+        assert_eq!(parsed[15], CubeMove::BackWideTurn);
     }
 
     #[test]
@@ -153,24 +153,24 @@ mod tests {
             .unwrap();
 
         assert_eq!(parsed.len(), 36);
-        assert!(parsed.contains(&CubeMove::RIGHT_TURN));
-        assert!(parsed.contains(&CubeMove::UP_TURN));
-        assert!(parsed.contains(&CubeMove::FRONT_TURN));
-        assert!(parsed.contains(&CubeMove::DOWN_TURN));
-        assert!(parsed.contains(&CubeMove::LEFT_TURN));
-        assert!(parsed.contains(&CubeMove::BACK_TURN));
-        assert!(parsed.contains(&CubeMove::MIDDLE_TURN));
-        assert!(parsed.contains(&CubeMove::STANDING_TURN));
-        assert!(parsed.contains(&CubeMove::EQUATORIAL_TURN));
-        assert!(parsed.contains(&CubeMove::X_ROTATION));
-        assert!(parsed.contains(&CubeMove::Y_ROTATION));
-        assert!(parsed.contains(&CubeMove::Z_ROTATION));
-        assert!(parsed.contains(&CubeMove::RIGHT_WIDE_TURN));
-        assert!(parsed.contains(&CubeMove::UP_WIDE_TURN));
-        assert!(parsed.contains(&CubeMove::FRONT_WIDE_TURN));
-        assert!(parsed.contains(&CubeMove::DOWN_WIDE_TURN));
-        assert!(parsed.contains(&CubeMove::LEFT_WIDE_TURN));
-        assert!(parsed.contains(&CubeMove::BACK_WIDE_TURN));
+        assert!(parsed.contains(&CubeMove::RightTurn));
+        assert!(parsed.contains(&CubeMove::UpTurn));
+        assert!(parsed.contains(&CubeMove::FrontTurn));
+        assert!(parsed.contains(&CubeMove::DownTurn));
+        assert!(parsed.contains(&CubeMove::LeftTurn));
+        assert!(parsed.contains(&CubeMove::BackTurn));
+        assert!(parsed.contains(&CubeMove::MiddleTurn));
+        assert!(parsed.contains(&CubeMove::StandingTurn));
+        assert!(parsed.contains(&CubeMove::EquatorialTurn));
+        assert!(parsed.contains(&CubeMove::XRotation));
+        assert!(parsed.contains(&CubeMove::YRotation));
+        assert!(parsed.contains(&CubeMove::ZRotation));
+        assert!(parsed.contains(&CubeMove::RightWideTurn));
+        assert!(parsed.contains(&CubeMove::UpWideTurn));
+        assert!(parsed.contains(&CubeMove::FrontWideTurn));
+        assert!(parsed.contains(&CubeMove::DownWideTurn));
+        assert!(parsed.contains(&CubeMove::LeftWideTurn));
+        assert!(parsed.contains(&CubeMove::BackWideTurn));
     }
 
     #[test]
@@ -228,8 +228,8 @@ mod tests {
             .unwrap();
 
         assert_eq!(parsed.len(), 2);
-        assert_eq!(parsed[0], CubeMove::RIGHT_WIDE_TURN);
-        assert_eq!(parsed[1], CubeMove::RIGHT_TURN);
+        assert_eq!(parsed[0], CubeMove::RightWideTurn);
+        assert_eq!(parsed[1], CubeMove::RightTurn);
         assert_ne!(parsed[0], parsed[1]);
     }
 }
