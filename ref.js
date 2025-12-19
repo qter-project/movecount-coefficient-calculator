@@ -31,18 +31,6 @@ function lastFingerTime(hand) {
 }
 
 function test(splitSeq, startingLeftGrip, startingRightGrip, speed, constants) {
-  const {
-    wristMult,
-    pushMult,
-    ringMult,
-    destabilize,
-    double,
-    sesliceMult,
-    overWorkMult,
-    moveblock,
-    rotation,
-  } = constants;
-
   const leftHand = hand();
   const rightHand = hand();
 
@@ -55,7 +43,7 @@ function test(splitSeq, startingLeftGrip, startingRightGrip, speed, constants) {
   let prevSpeed = null;
   let firstMoveSpeed = null;
 
-  function overwork(f, preferred, penalty = overWorkMult) {
+  function overwork(f, preferred, penalty = constants.overWorkMult) {
     if (f.pos !== preferred) {
       const delta = speed - f.t;
       if (delta < penalty) {
@@ -103,7 +91,7 @@ function test(splitSeq, startingLeftGrip, startingRightGrip, speed, constants) {
             lastFingerTime(rightHand),
           ];
         }
-        speed += wristMult;
+        speed += constants.wristMult;
         break;
       case "R":
         if (
@@ -121,7 +109,7 @@ function test(splitSeq, startingLeftGrip, startingRightGrip, speed, constants) {
             lastFingerTime(rightHand),
           ];
         }
-        speed += wristMult;
+        speed += constants.wristMult;
         break;
       case "R2":
         if (rightWrist >= Wrist.OVER && leftWrist < Wrist.OVER) {
@@ -138,12 +126,12 @@ function test(splitSeq, startingLeftGrip, startingRightGrip, speed, constants) {
             lastFingerTime(rightHand),
           ];
         }
-        speed += double * wristMult;
+        speed += constants.double * constants.wristMult;
         break;
       case "U":
         if (
           rightWrist == Wrist.NEUTRAL &&
-          (rightHand.thumb.t + overWorkMult <= speed ||
+          (rightHand.thumb.t + constants.overWorkMult <= speed ||
             rightHand.thumb.pos != "top") &&
           rightHand.index.pos != "m"
         ) {
@@ -166,11 +154,11 @@ function test(splitSeq, startingLeftGrip, startingRightGrip, speed, constants) {
         } else if (rightWrist == Wrist.OVER && leftWrist == Wrist.NEUTRAL) {
           speed += overwork(leftHand.index, "uflick");
           if (prevMove == "B'") {
-            speed += moveblock + pushMult;
+            speed += constants.moveblock + constants.pushMult;
           } else if (prevMove[0] == "B'") {
-            speed += moveblock * 0.5 + pushMult;
+            speed += constants.moveblock * 0.5 + constants.pushMult;
           } else {
-            speed += pushMult;
+            speed += constants.pushMult;
           }
           leftHand.index.t = speed;
           leftHand.index.pos = "home";
@@ -180,12 +168,20 @@ function test(splitSeq, startingLeftGrip, startingRightGrip, speed, constants) {
           prevMove[0] != "B"
         ) {
           if (leftHand.index.pos == "uflick") {
-            speed += overwork(leftHand.index, "eido", 0.75 * overWorkMult);
+            speed += overwork(
+              leftHand.index,
+              "eido",
+              0.75 * constants.overWorkMult
+            );
             speed = Math.max(speed, leftHand.ohCool + 2.5);
           } else {
-            speed += overwork(leftHand.index, "eido", 1.25 * overWorkMult);
+            speed += overwork(
+              leftHand.index,
+              "eido",
+              1.25 * constants.overWorkMult
+            );
           }
-          speed += 1.15 * pushMult;
+          speed += 1.15 * constants.pushMult;
           leftHand.index.t = speed;
           leftHand.index.pos = "uflick";
           leftHand.ohCool = speed;
@@ -203,7 +199,7 @@ function test(splitSeq, startingLeftGrip, startingRightGrip, speed, constants) {
       case "U'":
         if (
           leftWrist == Wrist.NEUTRAL &&
-          (leftHand.thumb.t + overWorkMult <= speed ||
+          (leftHand.thumb.t + constants.overWorkMult <= speed ||
             leftHand.thumb.pos != "top") &&
           leftHand.index.pos != "m"
         ) {
@@ -226,11 +222,11 @@ function test(splitSeq, startingLeftGrip, startingRightGrip, speed, constants) {
         } else if (leftWrist == Wrist.OVER && rightWrist == Wrist.NEUTRAL) {
           speed += overwork(rightHand.index, "uflick");
           if (prevMove == "B") {
-            speed += moveblock + pushMult;
+            speed += constants.moveblock + constants.pushMult;
           } else if (prevMove[0] == "B'") {
-            speed += moveblock * 0.5 + pushMult;
+            speed += constants.moveblock * 0.5 + constants.pushMult;
           } else {
-            speed += pushMult;
+            speed += constants.pushMult;
           }
           rightHand.index.t = speed;
           rightHand.index.pos = "home";
@@ -240,12 +236,20 @@ function test(splitSeq, startingLeftGrip, startingRightGrip, speed, constants) {
           prevMove[0] != "B"
         ) {
           if (rightHand.index.pos == "uflick") {
-            speed += overwork(rightHand.index, "eido", 0.75 * overWorkMult);
+            speed += overwork(
+              rightHand.index,
+              "eido",
+              0.75 * constants.overWorkMult
+            );
             speed = Math.max(speed, rightHand.ohCool + 2.5);
           } else {
-            speed += overwork(rightHand.index, "eido", 1.25 * overWorkMult);
+            speed += overwork(
+              rightHand.index,
+              "eido",
+              1.25 * constants.overWorkMult
+            );
           }
-          speed += 1.15 * pushMult;
+          speed += 1.15 * constants.pushMult;
           rightHand.index.t = speed;
           rightHand.index.pos = "uflick";
           rightHand.ohCool = speed;
@@ -278,8 +282,12 @@ function test(splitSeq, startingLeftGrip, startingRightGrip, speed, constants) {
         ) {
           speed += overwork(rightHand.index, "home");
           speed += overwork(rightHand.middle, "home");
-          speed += overwork(rightHand.ring, "u2grip", moveblock * overWorkMult);
-          speed += double;
+          speed += overwork(
+            rightHand.ring,
+            "u2grip",
+            constants.moveblock * constants.overWorkMult
+          );
+          speed += constants.double;
           rightHand.index.t = speed;
           rightHand.index.pos = "uflick";
           rightHand.middle.t = speed;
@@ -287,8 +295,12 @@ function test(splitSeq, startingLeftGrip, startingRightGrip, speed, constants) {
         } else if (leftWrist == Wrist.NEUTRAL) {
           speed += overwork(leftHand.index, "home");
           speed += overwork(leftHand.middle, "home");
-          speed += overwork(leftHand.ring, "u2grip", moveblock * overWorkMult);
-          speed += double;
+          speed += overwork(
+            leftHand.ring,
+            "u2grip",
+            constants.moveblock * constants.overWorkMult
+          );
+          speed += constants.double;
           leftHand.index.t = speed;
           leftHand.index.pos = "uflick";
           leftHand.middle.t = speed;
@@ -320,16 +332,16 @@ function test(splitSeq, startingLeftGrip, startingRightGrip, speed, constants) {
           speed += overwork(leftHand.ring, "home");
           speed += overwork(leftHand.middle, "home");
           if (prevMove[0] == "B") {
-            speed += moveblock * 0.5 + ringMult;
+            speed += constants.moveblock * 0.5 + constants.ringMult;
           } else {
-            speed += ringMult;
+            speed += constants.ringMult;
           }
           leftHand.ring.t = speed;
           leftHand.ring.pos = "dflick";
         } else if (rightWrist == Wrist.NEUTRAL && prevMove[0] != "B") {
           speed += overwork(rightHand.ring, "dflick");
           speed += overwork(rightHand.middle, "home");
-          speed += ringMult * pushMult;
+          speed += constants.ringMult * constants.pushMult;
           rightHand.ring.t = speed;
           rightHand.ring.pos = "home";
         } else {
@@ -359,16 +371,16 @@ function test(splitSeq, startingLeftGrip, startingRightGrip, speed, constants) {
           speed += overwork(rightHand.ring, "home");
           speed += overwork(rightHand.middle, "home");
           if (prevMove[0] == "B") {
-            speed += moveblock * 0.5 + ringMult;
+            speed += constants.moveblock * 0.5 + constants.ringMult;
           } else {
-            speed += ringMult;
+            speed += constants.ringMult;
           }
           rightHand.ring.t = speed;
           rightHand.ring.pos = "dflick";
         } else if (leftWrist == Wrist.NEUTRAL && prevMove[0] != "B") {
           speed += overwork(leftHand.ring, "dflick");
           speed += overwork(leftHand.middle, "home");
-          speed += ringMult * pushMult;
+          speed += constants.ringMult * constants.pushMult;
           leftHand.ring.t = speed;
           leftHand.ring.pos = "home";
         } else {
@@ -398,9 +410,10 @@ function test(splitSeq, startingLeftGrip, startingRightGrip, speed, constants) {
           speed += overwork(rightHand.middle, "home");
           speed += overwork(rightHand.ring, "home");
           if (prevMove[0] == "B") {
-            speed += moveblock * 0.5 + double * ringMult;
+            speed +=
+              constants.moveblock * 0.5 + constants.double * constants.ringMult;
           } else {
-            speed += double * ringMult;
+            speed += constants.double * constants.ringMult;
           }
           rightHand.ring.t = speed;
           rightHand.ring.pos = "dflick";
@@ -408,9 +421,10 @@ function test(splitSeq, startingLeftGrip, startingRightGrip, speed, constants) {
           speed += overwork(leftHand.middle, "home");
           speed += overwork(leftHand.ring, "home");
           if (prevMove[0] == "B") {
-            speed += moveblock * 0.5 + double * ringMult;
+            speed +=
+              constants.moveblock * 0.5 + constants.double * constants.ringMult;
           } else {
-            speed += double * ringMult;
+            speed += constants.double * constants.ringMult;
           }
           leftHand.ring.t = speed;
           leftHand.ring.pos = "dflick";
@@ -434,7 +448,7 @@ function test(splitSeq, startingLeftGrip, startingRightGrip, speed, constants) {
         } else if (leftWrist == Wrist.OVER && move != "f") {
           speed += overwork(leftHand.ring, "home");
           if (prevMove[0] == "D") {
-            speed += moveblock * 0.5 + ringMult;
+            speed += constants.moveblock * 0.5 + constants.ringMult;
           } else {
             speed += 1;
           }
@@ -446,7 +460,7 @@ function test(splitSeq, startingLeftGrip, startingRightGrip, speed, constants) {
           move != "f"
         ) {
           speed += overwork(rightHand.ring, "dflick");
-          speed += ringMult * pushMult;
+          speed += constants.ringMult * constants.pushMult;
           rightHand.ring.t = speed;
           rightHand.ring.pos = "home";
         } else if (
@@ -462,11 +476,15 @@ function test(splitSeq, startingLeftGrip, startingRightGrip, speed, constants) {
           overwork(leftHand.index, "uflick") == 0 &&
           prevMove[0] != "U"
         ) {
-          speed += pushMult;
+          speed += constants.pushMult;
           leftHand.index.t = speed;
           leftHand.index.pos = "home";
         } else if (leftWrist == Wrist.UNDER && grip == -1) {
-          speed += overwork(leftHand.thumb, "top", 0.9 * overWorkMult);
+          speed += overwork(
+            leftHand.thumb,
+            "top",
+            0.9 * constants.overWorkMult
+          );
           speed += overwork(leftHand.index, "top");
           if (prevMove[0] == "D") {
             speed += 1.8;
@@ -531,7 +549,7 @@ function test(splitSeq, startingLeftGrip, startingRightGrip, speed, constants) {
         } else if (rightWrist == Wrist.OVER && move != "f") {
           speed += overwork(rightHand.ring, "home");
           if (prevMove[0] == "D") {
-            speed += moveblock * 0.5 + ringMult;
+            speed += constants.moveblock * 0.5 + constants.ringMult;
           } else {
             speed += 1;
           }
@@ -543,7 +561,7 @@ function test(splitSeq, startingLeftGrip, startingRightGrip, speed, constants) {
           move != "f"
         ) {
           speed += overwork(leftHand.ring, "dflick");
-          speed += ringMult * pushMult;
+          speed += constants.ringMult * constants.pushMult;
           leftHand.ring.t = speed;
           leftHand.ring.pos = "home";
         } else if (
@@ -559,11 +577,15 @@ function test(splitSeq, startingLeftGrip, startingRightGrip, speed, constants) {
           overwork(rightHand.index, "uflick") == 0 &&
           prevMove[0] != "U"
         ) {
-          speed += pushMult;
+          speed += constants.pushMult;
           rightHand.index.t = speed;
           rightHand.index.pos = "home";
         } else if (rightWrist == Wrist.UNDER && grip == 1) {
-          speed += overwork(rightHand.thumb, "top", 0.9 * overWorkMult);
+          speed += overwork(
+            rightHand.thumb,
+            "top",
+            0.9 * constants.overWorkMult
+          );
           speed += overwork(rightHand.index, "top");
           if (prevMove[0] == "D") {
             speed += 1.8;
@@ -637,7 +659,7 @@ function test(splitSeq, startingLeftGrip, startingRightGrip, speed, constants) {
           speed += overwork(rightHand.index, "home");
           speed += overwork(rightHand.middle, "home");
           speed += overwork(rightHand.ring, "u2grip");
-          speed += double;
+          speed += constants.double;
           rightHand.index.t = speed;
           rightHand.index.pos = "uflick";
           rightHand.middle.t = speed;
@@ -646,7 +668,7 @@ function test(splitSeq, startingLeftGrip, startingRightGrip, speed, constants) {
           speed += overwork(leftHand.index, "home");
           speed += overwork(leftHand.middle, "home");
           speed += overwork(leftHand.ring, "u2grip");
-          speed += double;
+          speed += constants.double;
           leftHand.index.t = speed;
           leftHand.index.pos = "uflick";
           leftHand.middle.t = speed;
@@ -666,9 +688,10 @@ function test(splitSeq, startingLeftGrip, startingRightGrip, speed, constants) {
           speed += overwork(rightHand.middle, "home");
           speed += overwork(rightHand.ring, "home");
           if (prevMove[0] == "D") {
-            speed += double * ringMult + moveblock * 0.5;
+            speed +=
+              constants.double * constants.ringMult + constants.moveblock * 0.5;
           } else {
-            speed += double * ringMult;
+            speed += constants.double * constants.ringMult;
           }
           rightHand.ring.t = speed;
           rightHand.ring.pos = "dflick";
@@ -676,9 +699,10 @@ function test(splitSeq, startingLeftGrip, startingRightGrip, speed, constants) {
           speed += overwork(leftHand.middle, "home");
           speed += overwork(leftHand.ring, "home");
           if (prevMove[0] == "D") {
-            speed += double * ringMult + moveblock * 0.5;
+            speed +=
+              constants.double * constants.ringMult + constants.moveblock * 0.5;
           } else {
-            speed += double * ringMult;
+            speed += constants.double * constants.ringMult;
           }
           leftHand.ring.t = speed;
           leftHand.ring.pos = "dflick";
@@ -711,7 +735,7 @@ function test(splitSeq, startingLeftGrip, startingRightGrip, speed, constants) {
             lastFingerTime(rightHand),
           ];
         }
-        speed += wristMult;
+        speed += constants.wristMult;
         break;
       case "L'":
         if (
@@ -729,7 +753,7 @@ function test(splitSeq, startingLeftGrip, startingRightGrip, speed, constants) {
             lastFingerTime(rightHand),
           ];
         }
-        speed += wristMult;
+        speed += constants.wristMult;
         break;
       case "L2":
         if (leftWrist >= Wrist.OVER && rightWrist < Wrist.OVER) {
@@ -746,7 +770,7 @@ function test(splitSeq, startingLeftGrip, startingRightGrip, speed, constants) {
             lastFingerTime(rightHand),
           ];
         }
-        speed += double * wristMult;
+        speed += constants.double * constants.wristMult;
         break;
       case "B":
         if (rightWrist == Wrist.OVER) {
@@ -758,9 +782,9 @@ function test(splitSeq, startingLeftGrip, startingRightGrip, speed, constants) {
           speed += overwork(leftHand.ring, "home");
           speed += overwork(leftHand.middle, "home");
           if (prevMove[0] == "U") {
-            speed += moveblock * 0.5 + ringMult;
+            speed += constants.moveblock * 0.5 + constants.ringMult;
           } else {
-            speed += ringMult;
+            speed += constants.ringMult;
           }
           leftHand.ring.t = speed;
           leftHand.ring.pos = "dflick";
@@ -770,12 +794,20 @@ function test(splitSeq, startingLeftGrip, startingRightGrip, speed, constants) {
           prevMove[0] != "D"
         ) {
           if (leftHand.index.pos == "uflick") {
-            speed += overwork(leftHand.index, "eido", 0.75 * overWorkMult);
+            speed += overwork(
+              leftHand.index,
+              "eido",
+              0.75 * constants.overWorkMult
+            );
             speed = Math.max(speed, leftHand.ohCool + 2.5);
           } else {
-            speed += overwork(leftHand.index, "eido", 1.25 * overWorkMult);
+            speed += overwork(
+              leftHand.index,
+              "eido",
+              1.25 * constants.overWorkMult
+            );
           }
-          speed += 1.15 * pushMult;
+          speed += 1.15 * constants.pushMult;
           leftHand.index.t = speed;
           leftHand.index.pos = "uflick";
           leftHand.ohCool = speed;
@@ -783,7 +815,11 @@ function test(splitSeq, startingLeftGrip, startingRightGrip, speed, constants) {
           leftWrist == Wrist.NEUTRAL &&
           (rightWrist == Wrist.OVER || rightWrist == Wrist.UNDER)
         ) {
-          speed += overwork(leftHand.index, "top", 0.9 * overWorkMult);
+          speed += overwork(
+            leftHand.index,
+            "top",
+            0.9 * constants.overWorkMult
+          );
           if (prevMove[0] == "U") {
             speed += 1.45;
           } else {
@@ -794,7 +830,7 @@ function test(splitSeq, startingLeftGrip, startingRightGrip, speed, constants) {
         } else if (rightWrist == Wrist.UNDER && prevMove[0] != "U") {
           speed += overwork(rightHand.ring, "dflick");
           speed += overwork(rightHand.middle, "home");
-          speed += ringMult * pushMult;
+          speed += constants.ringMult * constants.pushMult;
           rightHand.ring.t = speed;
           rightHand.ring.pos = "home";
         } else {
@@ -818,9 +854,9 @@ function test(splitSeq, startingLeftGrip, startingRightGrip, speed, constants) {
           speed += overwork(rightHand.ring, "home");
           speed += overwork(rightHand.middle, "home");
           if (prevMove[0] == "U") {
-            speed += moveblock * 0.5 + ringMult;
+            speed += constants.moveblock * 0.5 + constants.ringMult;
           } else {
-            speed += ringMult;
+            speed += constants.ringMult;
           }
           rightHand.ring.t = speed;
           rightHand.ring.pos = "dflick";
@@ -830,12 +866,20 @@ function test(splitSeq, startingLeftGrip, startingRightGrip, speed, constants) {
           prevMove[0] != "D"
         ) {
           if (rightHand.index.pos == "uflick") {
-            speed += overwork(rightHand.index, "eido", 0.75 * overWorkMult);
+            speed += overwork(
+              rightHand.index,
+              "eido",
+              0.75 * constants.overWorkMult
+            );
             speed = Math.max(speed, rightHand.ohCool + 2.5);
           } else {
-            speed += overwork(rightHand.index, "eido", 1.25 * overWorkMult);
+            speed += overwork(
+              rightHand.index,
+              "eido",
+              1.25 * constants.overWorkMult
+            );
           }
-          speed += 1.15 * pushMult;
+          speed += 1.15 * constants.pushMult;
           rightHand.index.t = speed;
           rightHand.index.pos = "uflick";
           rightHand.ohCool = speed;
@@ -843,7 +887,11 @@ function test(splitSeq, startingLeftGrip, startingRightGrip, speed, constants) {
           rightWrist == Wrist.NEUTRAL &&
           (leftWrist == Wrist.OVER || leftWrist == Wrist.UNDER)
         ) {
-          speed += overwork(rightHand.index, "top", 0.9 * overWorkMult);
+          speed += overwork(
+            rightHand.index,
+            "top",
+            0.9 * constants.overWorkMult
+          );
           if (prevMove[0] == "U") {
             speed += 1.45;
           } else {
@@ -854,7 +902,7 @@ function test(splitSeq, startingLeftGrip, startingRightGrip, speed, constants) {
         } else if (leftWrist == Wrist.UNDER && prevMove[0] != "U") {
           speed += overwork(leftHand.ring, "dflick");
           speed += overwork(leftHand.middle, "home");
-          speed += ringMult * pushMult;
+          speed += constants.ringMult * constants.pushMult;
           leftHand.ring.t = speed;
           leftHand.ring.pos = "home";
         } else {
@@ -886,7 +934,7 @@ function test(splitSeq, startingLeftGrip, startingRightGrip, speed, constants) {
           speed += overwork(rightHand.index, "home");
           speed += overwork(rightHand.middle, "home");
           speed += overwork(rightHand.ring, "u2grip");
-          speed += double;
+          speed += constants.double;
           rightHand.index.t = speed;
           rightHand.index.pos = "uflick";
           rightHand.middle.t = speed;
@@ -895,7 +943,7 @@ function test(splitSeq, startingLeftGrip, startingRightGrip, speed, constants) {
           speed += overwork(leftHand.index, "home");
           speed += overwork(leftHand.middle, "home");
           speed += overwork(leftHand.ring, "u2grip");
-          speed += double;
+          speed += constants.double;
           leftHand.index.t = speed;
           leftHand.index.pos = "uflick";
           leftHand.middle.t = speed;
@@ -915,9 +963,10 @@ function test(splitSeq, startingLeftGrip, startingRightGrip, speed, constants) {
           speed += overwork(leftHand.middle, "home");
           speed += overwork(leftHand.ring, "home");
           if (prevMove[0] == "U") {
-            speed += moveblock * 0.5 + double * ringMult;
+            speed +=
+              constants.moveblock * 0.5 + constants.double * constants.ringMult;
           } else {
-            speed += double * ringMult;
+            speed += constants.double * constants.ringMult;
           }
           leftHand.ring.t = speed;
           leftHand.ring.pos = "dflick";
@@ -925,9 +974,10 @@ function test(splitSeq, startingLeftGrip, startingRightGrip, speed, constants) {
           speed += overwork(rightHand.middle, "home");
           speed += overwork(rightHand.ring, "home");
           if (prevMove[0] == "U") {
-            speed += moveblock * 0.5 + double * ringMult;
+            speed +=
+              constants.moveblock * 0.5 + constants.double * constants.ringMult;
           } else {
-            speed += double * ringMult;
+            speed += constants.double * constants.ringMult;
           }
           rightHand.ring.t = speed;
           rightHand.ring.pos = "dflick";
@@ -946,18 +996,35 @@ function test(splitSeq, startingLeftGrip, startingRightGrip, speed, constants) {
         if (
           rightWrist == Wrist.NEUTRAL &&
           (leftWrist != Wrist.NEUTRAL ||
-            overwork(rightHand.index, "top", 1.25 * overWorkMult) <=
-              (moveblock * 0.5 + pushMult - 1) * sesliceMult)
+            overwork(rightHand.index, "top", 1.25 * constants.overWorkMult) <=
+              (constants.moveblock * 0.5 + constants.pushMult - 1) *
+                constants.sesliceMult)
         ) {
-          speed += overwork(rightHand.index, "top", 1.25 * overWorkMult);
-          speed += sesliceMult;
+          speed += overwork(
+            rightHand.index,
+            "top",
+            1.25 * constants.overWorkMult
+          );
+          speed += constants.sesliceMult;
           rightHand.index.t = speed;
           rightHand.index.pos = "sflick";
         } else if (leftWrist == Wrist.NEUTRAL && rightWrist == Wrist.UNDER) {
-          speed += overwork(rightHand.index, "home", 1.25 * overWorkMult);
-          speed += overwork(rightHand.thumb, "top", 1.25 * overWorkMult);
-          speed += overwork(rightHand.middle, "home", 1.25 * overWorkMult);
-          speed += sesliceMult;
+          speed += overwork(
+            rightHand.index,
+            "home",
+            1.25 * constants.overWorkMult
+          );
+          speed += overwork(
+            rightHand.thumb,
+            "top",
+            1.25 * constants.overWorkMult
+          );
+          speed += overwork(
+            rightHand.middle,
+            "home",
+            1.25 * constants.overWorkMult
+          );
+          speed += constants.sesliceMult;
           rightHand.thumb.t = speed;
           rightHand.thumb.pos = "top";
           rightHand.middle.t = speed;
@@ -967,11 +1034,17 @@ function test(splitSeq, startingLeftGrip, startingRightGrip, speed, constants) {
           (rightWrist == Wrist.NEUTRAL ||
             (rightWrist == Wrist.OVER && (prevMove == "R" || prevMove == "L")))
         ) {
-          speed += overwork(leftHand.index, "uflick", 1.25 * overWorkMult);
+          speed += overwork(
+            leftHand.index,
+            "uflick",
+            1.25 * constants.overWorkMult
+          );
           if (prevMove[0] == "U") {
-            speed += moveblock * 0.5 + pushMult * sesliceMult;
+            speed +=
+              constants.moveblock * 0.5 +
+              constants.pushMult * constants.sesliceMult;
           } else {
-            speed += pushMult * sesliceMult;
+            speed += constants.pushMult * constants.sesliceMult;
           }
           leftHand.index.t = speed;
           leftHand.index.pos = "top";
@@ -990,18 +1063,35 @@ function test(splitSeq, startingLeftGrip, startingRightGrip, speed, constants) {
         if (
           leftWrist == Wrist.NEUTRAL &&
           (rightWrist != Wrist.NEUTRAL ||
-            overwork(leftHand.index, "top", 1.25 * overWorkMult) <=
-              (moveblock * 0.5 + pushMult - 1) * sesliceMult)
+            overwork(leftHand.index, "top", 1.25 * constants.overWorkMult) <=
+              (constants.moveblock * 0.5 + constants.pushMult - 1) *
+                constants.sesliceMult)
         ) {
-          speed += overwork(leftHand.index, "top", 1.25 * overWorkMult);
-          speed += sesliceMult;
+          speed += overwork(
+            leftHand.index,
+            "top",
+            1.25 * constants.overWorkMult
+          );
+          speed += constants.sesliceMult;
           leftHand.index.t = speed;
           leftHand.index.pos = "sflick";
         } else if (rightWrist == Wrist.NEUTRAL && leftWrist == Wrist.UNDER) {
-          speed += overwork(leftHand.index, "home", 1.25 * overWorkMult);
-          speed += overwork(leftHand.thumb, "bottom", 1.25 * overWorkMult);
-          speed += overwork(leftHand.middle, "home", 1.25 * overWorkMult);
-          speed += sesliceMult;
+          speed += overwork(
+            leftHand.index,
+            "home",
+            1.25 * constants.overWorkMult
+          );
+          speed += overwork(
+            leftHand.thumb,
+            "bottom",
+            1.25 * constants.overWorkMult
+          );
+          speed += overwork(
+            leftHand.middle,
+            "home",
+            1.25 * constants.overWorkMult
+          );
+          speed += constants.sesliceMult;
           leftHand.thumb.t = speed;
           leftHand.thumb.pos = "top";
           leftHand.middle.t = speed;
@@ -1011,11 +1101,17 @@ function test(splitSeq, startingLeftGrip, startingRightGrip, speed, constants) {
           (leftWrist == Wrist.NEUTRAL ||
             (leftWrist == Wrist.OVER && (prevMove == "R" || prevMove == "L")))
         ) {
-          speed += overwork(rightHand.index, "uflick", 1.25 * overWorkMult);
+          speed += overwork(
+            rightHand.index,
+            "uflick",
+            1.25 * constants.overWorkMult
+          );
           if (prevMove[0] == "U") {
-            speed += moveblock * 0.5 + pushMult * sesliceMult;
+            speed +=
+              constants.moveblock * 0.5 +
+              constants.pushMult * constants.sesliceMult;
           } else {
-            speed += pushMult * sesliceMult;
+            speed += constants.pushMult * constants.sesliceMult;
           }
           rightHand.index.t = speed;
           rightHand.index.pos = "top";
@@ -1039,7 +1135,7 @@ function test(splitSeq, startingLeftGrip, startingRightGrip, speed, constants) {
           speed += overwork(rightHand.index, "home");
           speed += overwork(rightHand.middle, "home");
           speed += overwork(rightHand.ring, "u2grip");
-          speed += sesliceMult * double;
+          speed += constants.sesliceMult * constants.double;
           rightHand.middle.t = speed;
           rightHand.middle.pos = "e";
           rightHand.index.t = speed;
@@ -1052,7 +1148,7 @@ function test(splitSeq, startingLeftGrip, startingRightGrip, speed, constants) {
           speed += overwork(leftHand.index, "home");
           speed += overwork(leftHand.middle, "home");
           speed += overwork(leftHand.ring, "u2grip");
-          speed += sesliceMult * double;
+          speed += constants.sesliceMult * constants.double;
           leftHand.middle.t = speed;
           leftHand.middle.pos = "e";
           leftHand.index.t = speed;
@@ -1074,7 +1170,7 @@ function test(splitSeq, startingLeftGrip, startingRightGrip, speed, constants) {
           leftWrist == Wrist.NEUTRAL
         ) {
           speed += overwork(leftHand.index, "home");
-          speed += sesliceMult;
+          speed += constants.sesliceMult;
           leftHand.index.t = speed;
           leftHand.index.pos = "e";
         } else if (
@@ -1083,7 +1179,7 @@ function test(splitSeq, startingLeftGrip, startingRightGrip, speed, constants) {
           prevMove[0] != "B"
         ) {
           speed += overwork(rightHand.index, "e");
-          speed += sesliceMult * pushMult;
+          speed += constants.sesliceMult * constants.pushMult;
           rightHand.index.t = speed;
           rightHand.index.pos = "home";
         } else {
@@ -1103,7 +1199,7 @@ function test(splitSeq, startingLeftGrip, startingRightGrip, speed, constants) {
           rightWrist == Wrist.NEUTRAL
         ) {
           speed += overwork(rightHand.index, "home");
-          speed += sesliceMult;
+          speed += constants.sesliceMult;
           rightHand.index.t = speed;
           rightHand.index.pos = "e";
         } else if (
@@ -1112,7 +1208,7 @@ function test(splitSeq, startingLeftGrip, startingRightGrip, speed, constants) {
           prevMove[0] != "B"
         ) {
           speed += overwork(leftHand.index, "e");
-          speed += sesliceMult * pushMult;
+          speed += constants.sesliceMult * constants.pushMult;
           leftHand.index.t = speed;
           leftHand.index.pos = "home";
         } else {
@@ -1134,7 +1230,7 @@ function test(splitSeq, startingLeftGrip, startingRightGrip, speed, constants) {
           speed += overwork(rightHand.index, "home");
           speed += overwork(rightHand.middle, "home");
           speed += overwork(rightHand.ring, "u2grip");
-          speed += sesliceMult * double;
+          speed += constants.sesliceMult * constants.double;
           rightHand.index.t = speed;
           rightHand.index.pos = "e";
           rightHand.middle.t = speed;
@@ -1146,7 +1242,7 @@ function test(splitSeq, startingLeftGrip, startingRightGrip, speed, constants) {
           speed += overwork(leftHand.index, "home");
           speed += overwork(leftHand.middle, "home");
           speed += overwork(leftHand.ring, "u2grip");
-          speed += sesliceMult * double;
+          speed += constants.sesliceMult * constants.double;
           leftHand.index.t = speed;
           leftHand.index.pos = "e";
           leftHand.middle.t = speed;
@@ -1196,9 +1292,13 @@ function test(splitSeq, startingLeftGrip, startingRightGrip, speed, constants) {
         if (leftWrist == Wrist.NEUTRAL && prevMove[0] != "B") {
           speed += overwork(leftHand.thumb, "home");
           speed += overwork(leftHand.index, "m");
-          speed += overwork(leftHand.middle, "mflick", 1.25 * overWorkMult);
+          speed += overwork(
+            leftHand.middle,
+            "mflick",
+            1.25 * constants.overWorkMult
+          );
           speed += overwork(leftHand.ring, "m");
-          speed += pushMult;
+          speed += constants.pushMult;
           leftHand.thumb.t = speed;
           leftHand.thumb.pos = "home";
           leftHand.index.t = speed;
@@ -1225,9 +1325,9 @@ function test(splitSeq, startingLeftGrip, startingRightGrip, speed, constants) {
           speed += overwork(leftHand.middle, "m");
           speed += overwork(leftHand.ring, "m");
           if (prevMove[0] == "B") {
-            speed += moveblock + double;
+            speed += constants.moveblock + constants.double;
           } else {
-            speed += double;
+            speed += constants.double;
           }
           leftHand.thumb.t = speed;
           leftHand.thumb.pos = "home";
@@ -1307,7 +1407,7 @@ function test(splitSeq, startingLeftGrip, startingRightGrip, speed, constants) {
       case "Y'":
       case "Z":
       case "Z'":
-        speed += rotation;
+        speed += constants.rotation;
         return [
           j + 1,
           speed,
@@ -1319,7 +1419,7 @@ function test(splitSeq, startingLeftGrip, startingRightGrip, speed, constants) {
         break;
       case "Y2":
       case "Z2":
-        speed += rotation * double;
+        speed += constants.rotation * constants.double;
         return [
           j + 1,
           speed,
@@ -1382,21 +1482,21 @@ function test(splitSeq, startingLeftGrip, startingRightGrip, speed, constants) {
       normalMove == "U" &&
       (leftWrist == Wrist.UNDER || rightWrist == Wrist.UNDER)
     ) {
-      speed += destabilize;
+      speed += constants.destabilize;
     }
 
     if (
       normalMove == "B" &&
       (leftWrist == Wrist.NEUTRAL || rightWrist == Wrist.NEUTRAL)
     ) {
-      speed += destabilize;
+      speed += constants.destabilize;
     }
 
     if (
       normalMove == "D" &&
       (leftWrist == Wrist.OVER || rightWrist == Wrist.OVER)
     ) {
-      speed += destabilize;
+      speed += constants.destabilize;
     }
 
     if (
@@ -1406,14 +1506,14 @@ function test(splitSeq, startingLeftGrip, startingRightGrip, speed, constants) {
         leftWrist == Wrist.UNDER ||
         rightWrist == Wrist.UNDER)
     ) {
-      speed += destabilize;
+      speed += constants.destabilize;
     }
 
     if (
       normalMove == "E" &&
       (leftWrist == Wrist.NEUTRAL || rightWrist == Wrist.NEUTRAL)
     ) {
-      speed += destabilize;
+      speed += constants.destabilize;
     }
   }
 
@@ -1435,6 +1535,18 @@ export function algSpeed(
   moveblock = 0.8,
   rotation = 3.5
 ) {
+  const constants = {
+    wristMult,
+    pushMult,
+    ringMult,
+    destabilize,
+    double,
+    sesliceMult,
+    overWorkMult,
+    moveblock,
+    rotation,
+  };
+
   let splitSeq = sequence.split(" ");
   let trueSplitSeq = [];
   for (let i = 0; i < splitSeq.length; i++) {
@@ -1487,7 +1599,9 @@ export function algSpeed(
       }
     }
   }
+
   splitSeq = trueSplitSeq.slice();
+
   if (ignoreauf) {
     if (splitSeq.length >= 1) {
       if (splitSeq[0][0] == "U") {
@@ -1513,18 +1627,6 @@ export function algSpeed(
       }
     }
   }
-
-  const constants = {
-    wristMult,
-    pushMult,
-    ringMult,
-    destabilize,
-    double,
-    sesliceMult,
-    overWorkMult,
-    moveblock,
-    rotation,
-  };
 
   let tests = [
     test(splitSeq, Wrist.NEUTRAL, Wrist.NEUTRAL, 0, constants),
@@ -1584,7 +1686,7 @@ export function algSpeed(
         let leftMatch = bestTest[2] == leftWrist;
         let rightMatch = bestTest[3] == rightWrist;
         if (["X", "x", "Y", "y", "Z", "z"].includes(prevMoveType)) {
-          // rotation handling
+          // constants.rotation handling
           tests.push(
             test(
               splitSeq.slice(bestTest[0]),
@@ -1595,8 +1697,13 @@ export function algSpeed(
             )
           );
         } else {
-          let penalty = doubleRegrip ? rotation * double : 2; // double regrips should be exceedingly rare, so penalty would almost always equal 2
+          // double regrips should be exceedingly rare, so penalty would almost always equal 2
+          let penalty = doubleRegrip
+            ? constants.rotation * constants.double
+            : 2;
+
           let rMoveLatency;
+
           if (
             prevMoveType == "R" ||
             prev2Type == "R" ||
