@@ -1,4 +1,23 @@
-let { algSpeed, algSpeedDetailed } = require("./ref.js");
+let {
+  algSpeed,
+  algSpeedDetailed,
+  ALLOWED_MOVES,
+} = require("./enhanced_mvc.js");
+let { algSpeed: algSpeedOld } = require("./sad_mvc.js");
+
+// Simple seeded random number generator (LCG)
+class SeededRandom {
+  constructor(seed = 12345) {
+    this.seed = seed;
+  }
+
+  next() {
+    this.seed = (this.seed * 1103515245 + 12345) & 0x7fffffff;
+    return this.seed / 0x7fffffff;
+  }
+}
+
+const rng = new SeededRandom(42);
 
 function approxEqual(a, b, tolerance = 0.1) {
   if (Number.isNaN(a) || Number.isNaN(b)) return false;
@@ -7,37 +26,42 @@ function approxEqual(a, b, tolerance = 0.1) {
 }
 
 console.log("=".repeat(60));
-console.log("VALIDATION: algSpeed vs algSpeedDetailed");
+console.log("VALIDATION: algSpeed vs algSpeedDetailed vs algSpeedOld");
 console.log("=".repeat(60));
 
 let passCount = 0;
 let failCount = 0;
 
 function testAlg(name, sequence, ...params) {
-  const oldSpeed = algSpeed(sequence, ...params);
+  const speed = algSpeed(sequence, ...params);
   const detailed = algSpeedDetailed(sequence, ...params);
+  const speedOld = algSpeedOld(sequence, ...params);
 
-  const match = approxEqual(oldSpeed, detailed.speed, 0.01);
+  const matchSpeedDetailed = approxEqual(speed, detailed.speed, 0.01);
+  const matchSpeedOld = approxEqual(speed, speedOld, 0.01);
+  const matchDetailedOld = approxEqual(detailed.speed, speedOld, 0.01);
 
-  if (match) {
+  if (matchSpeedDetailed && matchSpeedOld) {
     passCount++;
-    console.log(`✓ ${name}: ${oldSpeed} ≈ ${detailed.speed}`);
+    console.log(`✓ ${name}: ${speed} ≈ ${detailed.speed} ≈ ${speedOld}`);
   } else {
     failCount++;
     console.error(
-      `✗ ${name}: OLD=${oldSpeed} NEW=${detailed.speed} DIFF=${Math.abs(
-        oldSpeed - detailed.speed
-      )}`
+      `✗ FAILED SEQUENCE ${name}: 
+    sequence="${sequence}"
+
+    algSpeed=${speed} 
+    algSpeedDetailed=${detailed.speed} 
+    algSpeedOld=${speedOld}`
     );
   }
 
-  // Show summary for first few tests to demonstrate the feature
-  //   if (passCount + failCount <= 3) {
-  console.log(`  Summary:`, detailed.summary);
-  console.log(`  Aggregated: ${detailed.aggregatedCost}`);
-  //   }
+  if (passCount + failCount <= 3) {
+    console.log(`  Summary:`, detailed.summary);
+    console.log(`  Aggregated: ${detailed.aggregatedCost}`);
+  }
 
-  return match;
+  return matchSpeedDetailed && matchSpeedOld;
 }
 
 // Basic usage with default parameters
@@ -143,4 +167,37 @@ console.log(`  Move blocks: ${tpermDetail.summary.moveBlocks}`);
 console.log(`  Regrips: ${tpermDetail.summary.regrips}`);
 console.log(`  Double regrips: ${tpermDetail.summary.doubleRegrips}`);
 console.log(`  Rotations: ${tpermDetail.summary.rotations}`);
+console.log("=".repeat(60));
+
+passCount = 0;
+failCount = 0;
+
+const brute_force_count = 100;
+const brute_force_min_size = 5;
+const brute_force_max_size = 10;
+
+console.log(`Brute forcing ${brute_force_count} algorithms!`);
+
+let algorithm = ALLOWED_MOVES;
+
+for (let i = 0; i < brute_force_count; i++) {
+  const size =
+    Math.floor(rng.next() * (brute_force_max_size - brute_force_min_size + 1)) +
+    brute_force_min_size;
+
+  const seq = Array.from({ length: size }, () => {
+    const move = ALLOWED_MOVES[Math.floor(rng.next() * ALLOWED_MOVES.length)];
+    return move;
+  }).join(" ");
+
+  testAlg(`Brute force #${i + 1}`, seq);
+}
+
+console.log("\n" + "=".repeat(60));
+console.log(`RESULTS: ${passCount} passed, ${failCount} failed`);
+if (failCount === 0) {
+  console.log("✓ All tests passed! algSpeedDetailed matches algSpeed.");
+} else {
+  console.error("✗ Some tests failed. There are discrepancies.");
+}
 console.log("=".repeat(60));
