@@ -1,6 +1,8 @@
 let { algSpeed } = require("./ref.js");
 
 function approxEqual(a, b, tolerance = 0.1) {
+  if (Number.isNaN(a) || Number.isNaN(b)) return false;
+
   return Math.abs(a - b) <= tolerance;
 }
 
