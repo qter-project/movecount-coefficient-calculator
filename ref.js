@@ -1,3 +1,35 @@
+// all possible wrist positions
+const Wrist = {
+  UNDER: -1,
+  NEUTRAL: 0,
+  OVER: 1,
+  // wtf why did ai add this
+  BROKEN: 2,
+};
+
+// initialize finger state
+function finger() {
+  return {
+    t: -1, // last action time
+    pos: "home", // current position
+  };
+}
+
+function hand() {
+  return {
+    thumb: finger(),
+    index: finger(),
+    middle: finger(),
+    ring: finger(),
+    ohCool: -1,
+  };
+}
+
+// gets the last finger time of a hand
+function lastFingerTime(hand) {
+  return Math.max(hand.thumb.t, hand.index.t, hand.middle.t, hand.ring.t);
+}
+
 export function algSpeed(
   sequence,
   ignoreErrors = false,
@@ -13,40 +45,12 @@ export function algSpeed(
   moveblock = 0.8,
   rotation = 3.5
 ) {
-  const Wrist = {
-    UNDER: -1,
-    NEUTRAL: 0,
-    OVER: 1,
-    BROKEN: 2,
-  };
-
-  function finger() {
-    return {
-      t: -1, // last action time
-      pos: "home", // current position
-    };
-  }
-
-  function hand() {
-    return {
-      thumb: finger(),
-      index: finger(),
-      middle: finger(),
-      ring: finger(),
-      ohCool: -1,
-    };
-  }
-
-  function lastFingerTime(hand) {
-    return Math.max(hand.thumb.t, hand.index.t, hand.middle.t, hand.ring.t);
-  }
-
   function test(splitSeq, lGrip, rGrip, speed) {
-    const L = hand();
-    const R = hand();
+    const leftHand = hand();
+    const rightHand = hand();
 
-    let lWrist = lGrip;
-    let rWrist = rGrip;
+    let leftWrist = lGrip;
+    let rightWrist = rGrip;
     let grip = 1;
     let udgrip = -1;
     let prevSpeed = null;
@@ -61,6 +65,7 @@ export function algSpeed(
       }
       return 0;
     }
+
     for (let j = 0; j < splitSeq.length; j++) {
       let move = splitSeq[j];
       let normalMove = move.toUpperCase();
@@ -79,75 +84,85 @@ export function algSpeed(
       }
       switch (normalMove) {
         case "R'":
-          if (rWrist == 2) {
-            rWrist = 0;
-          } else if (rWrist > -1 && !(lWrist >= 1 && rWrist <= 0)) {
-            rWrist--;
+          if (rightWrist == Wrist.BROKEN) {
+            rightWrist = Wrist.NEUTRAL;
+          } else if (
+            rightWrist > Wrist.UNDER &&
+            !(leftWrist >= Wrist.OVER && rightWrist <= Wrist.NEUTRAL)
+          ) {
+            rightWrist--;
           } else {
             return [
               j,
               speed,
-              lWrist,
-              rWrist - 1,
-              lastFingerTime(L),
-              lastFingerTime(R),
+              leftWrist,
+              rightWrist - 1,
+              lastFingerTime(leftHand),
+              lastFingerTime(rightHand),
             ];
           }
           speed += wristMult;
           break;
         case "R":
-          if (rWrist < 2 && !(lWrist <= -1 && rWrist >= 0)) {
-            rWrist++;
+          if (
+            rightWrist < Wrist.BROKEN &&
+            !(leftWrist <= Wrist.UNDER && rightWrist >= Wrist.NEUTRAL)
+          ) {
+            rightWrist++;
           } else {
             return [
               j,
               speed,
-              lWrist,
-              rWrist + 1,
-              lastFingerTime(L),
-              lastFingerTime(R),
+              leftWrist,
+              rightWrist + 1,
+              lastFingerTime(leftHand),
+              lastFingerTime(rightHand),
             ];
           }
           speed += wristMult;
           break;
         case "R2":
-          if (rWrist >= 1 && lWrist < 1) {
-            rWrist = -1;
-          } else if (lWrist > -1) {
-            rWrist += 2;
+          if (rightWrist >= Wrist.OVER && leftWrist < Wrist.OVER) {
+            rightWrist = Wrist.UNDER;
+          } else if (leftWrist > Wrist.UNDER) {
+            rightWrist += 2;
           } else {
             return [
               j,
               speed,
-              lWrist,
-              rWrist > 0 ? rWrist - 2 : rWrist + 2,
-              lastFingerTime(L),
-              lastFingerTime(R),
+              leftWrist,
+              rightWrist > Wrist.NEUTRAL ? rightWrist - 2 : rightWrist + 2,
+              lastFingerTime(leftHand),
+              lastFingerTime(rightHand),
             ];
           }
           speed += double * wristMult;
           break;
         case "U":
           if (
-            rWrist == 0 &&
-            (R.thumb.t + overWorkMult <= speed || R.thumb.pos != "top") &&
-            R.index.pos != "m"
+            rightWrist == Wrist.NEUTRAL &&
+            (rightHand.thumb.t + overWorkMult <= speed ||
+              rightHand.thumb.pos != "top") &&
+            rightHand.index.pos != "m"
           ) {
-            if (overwork(R.index, "home") <= overwork(R.middle, "home")) {
-              speed += overwork(R.index, "home");
+            if (
+              overwork(rightHand.index, "home") <=
+              overwork(rightHand.middle, "home")
+            ) {
+              speed += overwork(rightHand.index, "home");
               speed += 1;
-              R.index.t = speed;
-              R.index.pos = "uflick";
+              rightHand.index.t = speed;
+              rightHand.index.pos = "uflick";
             } else {
-              speed += overwork(R.middle, "home");
+              speed += overwork(rightHand.middle, "home");
               speed += 1;
-              R.index.t = speed;
-              R.index.pos = "uflick";
-              R.middle.t = speed;
-              R.middle.pos = "uflick";
+              rightHand.index.t = speed;
+              rightHand.index.pos = "uflick";
+              rightHand.middle.t = speed;
+              rightHand.middle.pos = "uflick";
             }
-          } else if (rWrist == 1 && lWrist == 0) {
-            speed += overwork(L.index, "uflick");
+          } else if (rightWrist == Wrist.OVER && leftWrist == Wrist.NEUTRAL) {
+            speed += overwork(leftHand.index, "uflick");
             if (prevMove == "B'") {
               speed += moveblock + pushMult;
             } else if (prevMove[0] == "B'") {
@@ -155,51 +170,59 @@ export function algSpeed(
             } else {
               speed += pushMult;
             }
-            L.index.t = speed;
-            L.index.pos = "home";
-          } else if (lWrist == 0 && prevMove[0] != "F" && prevMove[0] != "B") {
-            if (L.index.pos == "uflick") {
-              speed += overwork(L.index, "eido", 0.75 * overWorkMult);
-              speed = Math.max(speed, L.ohCool + 2.5);
+            leftHand.index.t = speed;
+            leftHand.index.pos = "home";
+          } else if (
+            leftWrist == Wrist.NEUTRAL &&
+            prevMove[0] != "F" &&
+            prevMove[0] != "B"
+          ) {
+            if (leftHand.index.pos == "uflick") {
+              speed += overwork(leftHand.index, "eido", 0.75 * overWorkMult);
+              speed = Math.max(speed, leftHand.ohCool + 2.5);
             } else {
-              speed += overwork(L.index, "eido", 1.25 * overWorkMult);
+              speed += overwork(leftHand.index, "eido", 1.25 * overWorkMult);
             }
             speed += 1.15 * pushMult;
-            L.index.t = speed;
-            L.index.pos = "uflick";
-            L.ohCool = speed;
+            leftHand.index.t = speed;
+            leftHand.index.pos = "uflick";
+            leftHand.ohCool = speed;
           } else {
             return [
               j,
               speed,
-              lWrist,
-              rWrist,
-              lastFingerTime(L),
-              lastFingerTime(R),
+              leftWrist,
+              rightWrist,
+              lastFingerTime(leftHand),
+              lastFingerTime(rightHand),
             ];
           }
           break;
         case "U'":
           if (
-            lWrist == 0 &&
-            (L.thumb.t + overWorkMult <= speed || L.thumb.pos != "top") &&
-            L.index.pos != "m"
+            leftWrist == Wrist.NEUTRAL &&
+            (leftHand.thumb.t + overWorkMult <= speed ||
+              leftHand.thumb.pos != "top") &&
+            leftHand.index.pos != "m"
           ) {
-            if (overwork(L.index, "home") <= overwork(L.middle, "home")) {
-              speed += overwork(L.index, "home");
+            if (
+              overwork(leftHand.index, "home") <=
+              overwork(leftHand.middle, "home")
+            ) {
+              speed += overwork(leftHand.index, "home");
               speed += 1;
-              L.index.t = speed;
-              L.index.pos = "uflick";
+              leftHand.index.t = speed;
+              leftHand.index.pos = "uflick";
             } else {
-              speed += overwork(L.middle, "home");
+              speed += overwork(leftHand.middle, "home");
               speed += 1;
-              L.index.t = speed;
-              L.index.pos = "uflick";
-              L.middle.t = speed;
-              L.middle.pos = "uflick";
+              leftHand.index.t = speed;
+              leftHand.index.pos = "uflick";
+              leftHand.middle.t = speed;
+              leftHand.middle.pos = "uflick";
             }
-          } else if (lWrist == 1 && rWrist == 0) {
-            speed += overwork(R.index, "uflick");
+          } else if (leftWrist == Wrist.OVER && rightWrist == Wrist.NEUTRAL) {
+            speed += overwork(rightHand.index, "uflick");
             if (prevMove == "B") {
               speed += moveblock + pushMult;
             } else if (prevMove[0] == "B'") {
@@ -207,984 +230,1083 @@ export function algSpeed(
             } else {
               speed += pushMult;
             }
-            R.index.t = speed;
-            R.index.pos = "home";
-          } else if (rWrist == 0 && prevMove[0] != "F" && prevMove[0] != "B") {
-            if (R.index.pos == "uflick") {
-              speed += overwork(R.index, "eido", 0.75 * overWorkMult);
-              speed = Math.max(speed, R.ohCool + 2.5);
+            rightHand.index.t = speed;
+            rightHand.index.pos = "home";
+          } else if (
+            rightWrist == Wrist.NEUTRAL &&
+            prevMove[0] != "F" &&
+            prevMove[0] != "B"
+          ) {
+            if (rightHand.index.pos == "uflick") {
+              speed += overwork(rightHand.index, "eido", 0.75 * overWorkMult);
+              speed = Math.max(speed, rightHand.ohCool + 2.5);
             } else {
-              speed += overwork(R.index, "eido", 1.25 * overWorkMult);
+              speed += overwork(rightHand.index, "eido", 1.25 * overWorkMult);
             }
             speed += 1.15 * pushMult;
-            R.index.t = speed;
-            R.index.pos = "uflick";
-            R.ohCool = speed;
+            rightHand.index.t = speed;
+            rightHand.index.pos = "uflick";
+            rightHand.ohCool = speed;
           } else {
             return [
               j,
               speed,
-              lWrist,
-              rWrist,
-              lastFingerTime(L),
-              lastFingerTime(R),
+              leftWrist,
+              rightWrist,
+              lastFingerTime(leftHand),
+              lastFingerTime(rightHand),
             ];
           }
           break;
         case "U2":
           if (
-            rWrist == 0 &&
-            (L.index.pos == "m" ||
-              lWrist != 0 ||
+            rightWrist == Wrist.NEUTRAL &&
+            (leftHand.index.pos == "m" ||
+              leftWrist != Wrist.NEUTRAL ||
               Math.max(
-                overwork(R.index, "home"),
-                overwork(R.middle, "home"),
-                overwork(R.ring, "u2grip")
+                overwork(rightHand.index, "home"),
+                overwork(rightHand.middle, "home"),
+                overwork(rightHand.ring, "u2grip")
               ) <=
                 Math.max(
-                  overwork(L.index, "home"),
-                  overwork(L.middle, "home"),
-                  overwork(L.ring, "u2grip")
+                  overwork(leftHand.index, "home"),
+                  overwork(leftHand.middle, "home"),
+                  overwork(leftHand.ring, "u2grip")
                 ))
           ) {
-            speed += overwork(R.index, "home");
-            speed += overwork(R.middle, "home");
-            speed += overwork(R.ring, "u2grip", moveblock * overWorkMult);
+            speed += overwork(rightHand.index, "home");
+            speed += overwork(rightHand.middle, "home");
+            speed += overwork(
+              rightHand.ring,
+              "u2grip",
+              moveblock * overWorkMult
+            );
             speed += double;
-            R.index.t = speed;
-            R.index.pos = "uflick";
-            R.middle.t = speed;
-            R.middle.pos = "uflick";
-          } else if (lWrist == 0) {
-            speed += overwork(L.index, "home");
-            speed += overwork(L.middle, "home");
-            speed += overwork(L.ring, "u2grip", moveblock * overWorkMult);
+            rightHand.index.t = speed;
+            rightHand.index.pos = "uflick";
+            rightHand.middle.t = speed;
+            rightHand.middle.pos = "uflick";
+          } else if (leftWrist == Wrist.NEUTRAL) {
+            speed += overwork(leftHand.index, "home");
+            speed += overwork(leftHand.middle, "home");
+            speed += overwork(
+              leftHand.ring,
+              "u2grip",
+              moveblock * overWorkMult
+            );
             speed += double;
-            L.index.t = speed;
-            L.index.pos = "uflick";
-            L.middle.t = speed;
-            L.middle.pos = "uflick";
+            leftHand.index.t = speed;
+            leftHand.index.pos = "uflick";
+            leftHand.middle.t = speed;
+            leftHand.middle.pos = "uflick";
           } else {
             return [
               j,
               speed,
-              lWrist,
-              rWrist,
-              lastFingerTime(L),
-              lastFingerTime(R),
+              leftWrist,
+              rightWrist,
+              lastFingerTime(leftHand),
+              lastFingerTime(rightHand),
             ];
           }
           break;
         case "D":
           if (
-            lWrist == 0 &&
-            (rWrist != 0 ||
-              Math.max(overwork(L.ring, "home"), overwork(L.middle, "home")) <=
+            leftWrist == Wrist.NEUTRAL &&
+            (rightWrist != Wrist.NEUTRAL ||
+              Math.max(
+                overwork(leftHand.ring, "home"),
+                overwork(leftHand.middle, "home")
+              ) <=
                 Math.max(
-                  overwork(R.ring, "dflick"),
-                  overwork(R.middle, "home")
+                  overwork(rightHand.ring, "dflick"),
+                  overwork(rightHand.middle, "home")
                 ))
           ) {
-            speed += overwork(L.ring, "home");
-            speed += overwork(L.middle, "home");
+            speed += overwork(leftHand.ring, "home");
+            speed += overwork(leftHand.middle, "home");
             if (prevMove[0] == "B") {
               speed += moveblock * 0.5 + ringMult;
             } else {
               speed += ringMult;
             }
-            L.ring.t = speed;
-            L.ring.pos = "dflick";
-          } else if (rWrist == 0 && prevMove[0] != "B") {
-            speed += overwork(R.ring, "dflick");
-            speed += overwork(R.middle, "home");
+            leftHand.ring.t = speed;
+            leftHand.ring.pos = "dflick";
+          } else if (rightWrist == Wrist.NEUTRAL && prevMove[0] != "B") {
+            speed += overwork(rightHand.ring, "dflick");
+            speed += overwork(rightHand.middle, "home");
             speed += ringMult * pushMult;
-            R.ring.t = speed;
-            R.ring.pos = "home";
+            rightHand.ring.t = speed;
+            rightHand.ring.pos = "home";
           } else {
             return [
               j,
               speed,
-              lWrist,
-              rWrist,
-              lastFingerTime(L),
-              lastFingerTime(R),
+              leftWrist,
+              rightWrist,
+              lastFingerTime(leftHand),
+              lastFingerTime(rightHand),
             ];
           }
           break;
         case "D'":
           if (
-            rWrist == 0 &&
-            (lWrist != 0 ||
-              Math.max(overwork(R.ring, "home"), overwork(R.middle, "home")) <=
+            rightWrist == Wrist.NEUTRAL &&
+            (leftWrist != Wrist.NEUTRAL ||
+              Math.max(
+                overwork(rightHand.ring, "home"),
+                overwork(rightHand.middle, "home")
+              ) <=
                 Math.max(
-                  overwork(L.ring, "dflick"),
-                  overwork(L.middle, "home")
+                  overwork(leftHand.ring, "dflick"),
+                  overwork(leftHand.middle, "home")
                 ))
           ) {
-            speed += overwork(R.ring, "home");
-            speed += overwork(R.middle, "home");
+            speed += overwork(rightHand.ring, "home");
+            speed += overwork(rightHand.middle, "home");
             if (prevMove[0] == "B") {
               speed += moveblock * 0.5 + ringMult;
             } else {
               speed += ringMult;
             }
-            R.ring.t = speed;
-            R.ring.pos = "dflick";
-          } else if (lWrist == 0 && prevMove[0] != "B") {
-            speed += overwork(L.ring, "dflick");
-            speed += overwork(L.middle, "home");
+            rightHand.ring.t = speed;
+            rightHand.ring.pos = "dflick";
+          } else if (leftWrist == Wrist.NEUTRAL && prevMove[0] != "B") {
+            speed += overwork(leftHand.ring, "dflick");
+            speed += overwork(leftHand.middle, "home");
             speed += ringMult * pushMult;
-            L.ring.t = speed;
-            L.ring.pos = "home";
+            leftHand.ring.t = speed;
+            leftHand.ring.pos = "home";
           } else {
             return [
               j,
               speed,
-              lWrist,
-              rWrist,
-              lastFingerTime(L),
-              lastFingerTime(R),
+              leftWrist,
+              rightWrist,
+              lastFingerTime(leftHand),
+              lastFingerTime(rightHand),
             ];
           }
           break;
         case "D2":
           if (
-            rWrist == 0 &&
-            (lWrist != 0 ||
-              Math.max(overwork(R.middle, "home"), overwork(R.ring, "home")) <=
-                Math.max(overwork(L.middle, "home"), overwork(L.ring, "home")))
+            rightWrist == Wrist.NEUTRAL &&
+            (leftWrist != Wrist.NEUTRAL ||
+              Math.max(
+                overwork(rightHand.middle, "home"),
+                overwork(rightHand.ring, "home")
+              ) <=
+                Math.max(
+                  overwork(leftHand.middle, "home"),
+                  overwork(leftHand.ring, "home")
+                ))
           ) {
-            speed += overwork(R.middle, "home");
-            speed += overwork(R.ring, "home");
+            speed += overwork(rightHand.middle, "home");
+            speed += overwork(rightHand.ring, "home");
             if (prevMove[0] == "B") {
               speed += moveblock * 0.5 + double * ringMult;
             } else {
               speed += double * ringMult;
             }
-            R.ring.t = speed;
-            R.ring.pos = "dflick";
-          } else if (lWrist == 0) {
-            speed += overwork(L.middle, "home");
-            speed += overwork(L.ring, "home");
+            rightHand.ring.t = speed;
+            rightHand.ring.pos = "dflick";
+          } else if (leftWrist == Wrist.NEUTRAL) {
+            speed += overwork(leftHand.middle, "home");
+            speed += overwork(leftHand.ring, "home");
             if (prevMove[0] == "B") {
               speed += moveblock * 0.5 + double * ringMult;
             } else {
               speed += double * ringMult;
             }
-            L.ring.t = speed;
-            L.ring.pos = "dflick";
+            leftHand.ring.t = speed;
+            leftHand.ring.pos = "dflick";
           } else {
             return [
               j,
               speed,
-              lWrist,
-              rWrist,
-              lastFingerTime(L),
-              lastFingerTime(R),
+              leftWrist,
+              rightWrist,
+              lastFingerTime(leftHand),
+              lastFingerTime(rightHand),
             ];
           }
           break;
         case "F":
-          if (rWrist == -1) {
-            speed += overwork(R.index, "home");
+          if (rightWrist == Wrist.UNDER) {
+            speed += overwork(rightHand.index, "home");
             speed += 1;
-            R.index.t = speed;
-            R.index.pos = "uflick";
-          } else if (lWrist == 1 && move != "f") {
-            speed += overwork(L.ring, "home");
+            rightHand.index.t = speed;
+            rightHand.index.pos = "uflick";
+          } else if (leftWrist == Wrist.OVER && move != "f") {
+            speed += overwork(leftHand.ring, "home");
             if (prevMove[0] == "D") {
               speed += moveblock * 0.5 + ringMult;
             } else {
               speed += 1;
             }
-            L.ring.t = speed;
-            L.ring.pos = "dflick";
-          } else if (rWrist == 1 && prevMove[0] != "D" && move != "f") {
-            speed += overwork(R.ring, "dflick");
-            speed += ringMult * pushMult;
-            R.ring.t = speed;
-            R.ring.pos = "home";
+            leftHand.ring.t = speed;
+            leftHand.ring.pos = "dflick";
           } else if (
-            lWrist == -1 &&
-            rWrist == 0 &&
-            overwork(R.index, "uflick") == 0
+            rightWrist == Wrist.OVER &&
+            prevMove[0] != "D" &&
+            move != "f"
+          ) {
+            speed += overwork(rightHand.ring, "dflick");
+            speed += ringMult * pushMult;
+            rightHand.ring.t = speed;
+            rightHand.ring.pos = "home";
+          } else if (
+            leftWrist == Wrist.UNDER &&
+            rightWrist == Wrist.NEUTRAL &&
+            overwork(rightHand.index, "uflick") == 0
           ) {
             speed += 1;
-            R.index.t = speed;
-            R.index.pos = "fflick";
+            rightHand.index.t = speed;
+            rightHand.index.pos = "fflick";
           } else if (
-            lWrist == -1 &&
-            overwork(L.index, "uflick") == 0 &&
+            leftWrist == Wrist.UNDER &&
+            overwork(leftHand.index, "uflick") == 0 &&
             prevMove[0] != "U"
           ) {
             speed += pushMult;
-            L.index.t = speed;
-            L.index.pos = "home";
-          } else if (lWrist == -1 && grip == -1) {
-            speed += overwork(L.thumb, "top", 0.9 * overWorkMult);
-            speed += overwork(L.index, "top");
+            leftHand.index.t = speed;
+            leftHand.index.pos = "home";
+          } else if (leftWrist == Wrist.UNDER && grip == -1) {
+            speed += overwork(leftHand.thumb, "top", 0.9 * overWorkMult);
+            speed += overwork(leftHand.index, "top");
             if (prevMove[0] == "D") {
               speed += 1.8;
             } else {
               speed += 1;
             }
-            lWrist++;
-            L.thumb.t = speed;
-            L.thumb.pos = "leftu";
-            L.index.t = speed;
-            L.index.pos = "top";
-          } else if (lWrist == 0 && grip == -1) {
-            speed += overwork(L.thumb, "bottom");
-            speed += overwork(L.index, "top");
+            leftWrist++;
+            leftHand.thumb.t = speed;
+            leftHand.thumb.pos = "leftu";
+            leftHand.index.t = speed;
+            leftHand.index.pos = "top";
+          } else if (leftWrist == Wrist.NEUTRAL && grip == -1) {
+            speed += overwork(leftHand.thumb, "bottom");
+            speed += overwork(leftHand.index, "top");
             if (prevMove[0] == "D") {
               speed += 2.05;
             } else {
               speed += 1.25;
             }
-            L.thumb.t = speed;
-            L.thumb.pos = "top";
-            L.index.t = speed;
-            L.index.pos = "top";
-          } else if (rWrist == 0 && lWrist == 0 && move == "f") {
-            speed += overwork(R.index, "uflick");
-            speed += overwork(R.middle, "home");
+            leftHand.thumb.t = speed;
+            leftHand.thumb.pos = "top";
+            leftHand.index.t = speed;
+            leftHand.index.pos = "top";
+          } else if (
+            rightWrist == Wrist.NEUTRAL &&
+            leftWrist == Wrist.NEUTRAL &&
+            move == "f"
+          ) {
+            speed += overwork(rightHand.index, "uflick");
+            speed += overwork(rightHand.middle, "home");
             speed += 1;
-            R.index.t = speed;
-            R.index.pos = "fflick";
-          } else if (j == 0 && rWrist == 0 && lWrist == 0) {
-            speed += overwork(R.thumb, "top");
+            rightHand.index.t = speed;
+            rightHand.index.pos = "fflick";
+          } else if (
+            j == 0 &&
+            rightWrist == Wrist.NEUTRAL &&
+            leftWrist == Wrist.NEUTRAL
+          ) {
+            speed += overwork(rightHand.thumb, "top");
             speed += 1;
-            R.thumb.t = speed;
-            R.thumb.pos = "rdown";
-            R.middle.t = speed;
-            R.middle.pos = "uflick";
+            rightHand.thumb.t = speed;
+            rightHand.thumb.pos = "rdown";
+            rightHand.middle.t = speed;
+            rightHand.middle.pos = "uflick";
           } else {
             return [
               j,
               speed,
-              lWrist,
-              rWrist,
-              lastFingerTime(L),
-              lastFingerTime(R),
+              leftWrist,
+              rightWrist,
+              lastFingerTime(leftHand),
+              lastFingerTime(rightHand),
             ];
           }
           break;
         case "F'":
-          if (lWrist == -1) {
-            speed += overwork(L.index, "home");
+          if (leftWrist == Wrist.UNDER) {
+            speed += overwork(leftHand.index, "home");
             speed += 1;
-            L.index.t = speed;
-            L.index.pos = "uflick";
-          } else if (rWrist == 1 && move != "f") {
-            speed += overwork(R.ring, "home");
+            leftHand.index.t = speed;
+            leftHand.index.pos = "uflick";
+          } else if (rightWrist == Wrist.OVER && move != "f") {
+            speed += overwork(rightHand.ring, "home");
             if (prevMove[0] == "D") {
               speed += moveblock * 0.5 + ringMult;
             } else {
               speed += 1;
             }
-            R.ring.t = speed;
-            R.ring.pos = "dflick";
-          } else if (lWrist == 1 && prevMove[0] != "D" && move != "f") {
-            speed += overwork(L.ring, "dflick");
-            speed += ringMult * pushMult;
-            L.ring.t = speed;
-            L.ring.pos = "home";
+            rightHand.ring.t = speed;
+            rightHand.ring.pos = "dflick";
           } else if (
-            rWrist == -1 &&
-            lWrist == 0 &&
-            overwork(L.index, "uflick") == 0
+            leftWrist == Wrist.OVER &&
+            prevMove[0] != "D" &&
+            move != "f"
+          ) {
+            speed += overwork(leftHand.ring, "dflick");
+            speed += ringMult * pushMult;
+            leftHand.ring.t = speed;
+            leftHand.ring.pos = "home";
+          } else if (
+            rightWrist == Wrist.UNDER &&
+            leftWrist == Wrist.NEUTRAL &&
+            overwork(leftHand.index, "uflick") == 0
           ) {
             speed += 1;
-            L.index.t = speed;
-            L.index.pos = "fflick";
+            leftHand.index.t = speed;
+            leftHand.index.pos = "fflick";
           } else if (
-            rWrist == -1 &&
-            overwork(R.index, "uflick") == 0 &&
+            rightWrist == Wrist.UNDER &&
+            overwork(rightHand.index, "uflick") == 0 &&
             prevMove[0] != "U"
           ) {
             speed += pushMult;
-            R.index.t = speed;
-            R.index.pos = "home";
-          } else if (rWrist == -1 && grip == 1) {
-            speed += overwork(R.thumb, "top", 0.9 * overWorkMult);
-            speed += overwork(R.index, "top");
+            rightHand.index.t = speed;
+            rightHand.index.pos = "home";
+          } else if (rightWrist == Wrist.UNDER && grip == 1) {
+            speed += overwork(rightHand.thumb, "top", 0.9 * overWorkMult);
+            speed += overwork(rightHand.index, "top");
             if (prevMove[0] == "D") {
               speed += 1.8;
             } else {
               speed += 1;
             }
-            rWrist++;
-            R.thumb.t = speed;
-            R.thumb.pos = "rightu";
-            R.index.t = speed;
-            R.index.pos = "top";
-          } else if (rWrist == 0 && grip == 1) {
-            speed += overwork(R.thumb, "bottom");
-            speed += overwork(R.index, "top");
+            rightWrist++;
+            rightHand.thumb.t = speed;
+            rightHand.thumb.pos = "rightu";
+            rightHand.index.t = speed;
+            rightHand.index.pos = "top";
+          } else if (rightWrist == Wrist.NEUTRAL && grip == 1) {
+            speed += overwork(rightHand.thumb, "bottom");
+            speed += overwork(rightHand.index, "top");
             if (prevMove[0] == "D") {
               speed += 2.05;
             } else {
               speed += 1.25;
             }
-            R.thumb.t = speed;
-            R.thumb.pos = "top";
-            R.index.t = speed;
-            R.index.pos = "top";
-          } else if (lWrist == 0 && rWrist == 0 && move == "f'") {
-            speed += overwork(L.index, "uflick");
-            speed += overwork(L.middle, "home");
+            rightHand.thumb.t = speed;
+            rightHand.thumb.pos = "top";
+            rightHand.index.t = speed;
+            rightHand.index.pos = "top";
+          } else if (
+            leftWrist == Wrist.NEUTRAL &&
+            rightWrist == Wrist.NEUTRAL &&
+            move == "f'"
+          ) {
+            speed += overwork(leftHand.index, "uflick");
+            speed += overwork(leftHand.middle, "home");
             speed += 1;
-            L.index.t = speed;
-            L.index.pos = "fflick";
-          } else if (j == 0 && rWrist == 0 && lWrist == 0) {
-            speed += overwork(L.thumb, "top");
+            leftHand.index.t = speed;
+            leftHand.index.pos = "fflick";
+          } else if (
+            j == 0 &&
+            rightWrist == Wrist.NEUTRAL &&
+            leftWrist == Wrist.NEUTRAL
+          ) {
+            speed += overwork(leftHand.thumb, "top");
             speed += 1;
-            L.thumb.t = speed;
-            L.thumb.pos = "rdown";
-            L.middle.t = speed;
-            L.middle.pos = "uflick";
+            leftHand.thumb.t = speed;
+            leftHand.thumb.pos = "rdown";
+            leftHand.middle.t = speed;
+            leftHand.middle.pos = "uflick";
           } else {
             return [
               j,
               speed,
-              lWrist,
-              rWrist,
-              lastFingerTime(L),
-              lastFingerTime(R),
+              leftWrist,
+              rightWrist,
+              lastFingerTime(leftHand),
+              lastFingerTime(rightHand),
             ];
           }
           break;
         case "F2":
           if (
-            rWrist == -1 &&
-            (lWrist != -1 ||
+            rightWrist == Wrist.UNDER &&
+            (leftWrist != Wrist.UNDER ||
               Math.max(
-                overwork(R.index, "home"),
-                overwork(R.middle, "home"),
-                overwork(R.ring, "u2grip")
+                overwork(rightHand.index, "home"),
+                overwork(rightHand.middle, "home"),
+                overwork(rightHand.ring, "u2grip")
               ) <=
                 Math.max(
-                  overwork(L.index, "home"),
-                  overwork(L.middle, "home"),
-                  overwork(L.ring, "u2grip")
+                  overwork(leftHand.index, "home"),
+                  overwork(leftHand.middle, "home"),
+                  overwork(leftHand.ring, "u2grip")
                 ))
           ) {
-            speed += overwork(R.index, "home");
-            speed += overwork(R.middle, "home");
-            speed += overwork(R.ring, "u2grip");
+            speed += overwork(rightHand.index, "home");
+            speed += overwork(rightHand.middle, "home");
+            speed += overwork(rightHand.ring, "u2grip");
             speed += double;
-            R.index.t = speed;
-            R.index.pos = "uflick";
-            R.middle.t = speed;
-            R.middle.pos = "uflick";
-          } else if (lWrist == -1) {
-            speed += overwork(L.index, "home");
-            speed += overwork(L.middle, "home");
-            speed += overwork(L.ring, "u2grip");
+            rightHand.index.t = speed;
+            rightHand.index.pos = "uflick";
+            rightHand.middle.t = speed;
+            rightHand.middle.pos = "uflick";
+          } else if (leftWrist == Wrist.UNDER) {
+            speed += overwork(leftHand.index, "home");
+            speed += overwork(leftHand.middle, "home");
+            speed += overwork(leftHand.ring, "u2grip");
             speed += double;
-            L.index.t = speed;
-            L.index.pos = "uflick";
-            L.middle.t = speed;
-            L.middle.pos = "uflick";
+            leftHand.index.t = speed;
+            leftHand.index.pos = "uflick";
+            leftHand.middle.t = speed;
+            leftHand.middle.pos = "uflick";
           } else if (
-            rWrist == 1 &&
-            (lWrist != 1 ||
-              Math.max(overwork(R.middle, "home"), overwork(R.ring, "home")) <=
-                Math.max(overwork(L.middle, "home"), overwork(L.ring, "home")))
+            rightWrist == Wrist.OVER &&
+            (leftWrist != Wrist.OVER ||
+              Math.max(
+                overwork(rightHand.middle, "home"),
+                overwork(rightHand.ring, "home")
+              ) <=
+                Math.max(
+                  overwork(leftHand.middle, "home"),
+                  overwork(leftHand.ring, "home")
+                ))
           ) {
-            speed += overwork(R.middle, "home");
-            speed += overwork(R.ring, "home");
+            speed += overwork(rightHand.middle, "home");
+            speed += overwork(rightHand.ring, "home");
             if (prevMove[0] == "D") {
               speed += double * ringMult + moveblock * 0.5;
             } else {
               speed += double * ringMult;
             }
-            R.ring.t = speed;
-            R.ring.pos = "dflick";
-          } else if (lWrist == 1) {
-            speed += overwork(L.middle, "home");
-            speed += overwork(L.ring, "home");
+            rightHand.ring.t = speed;
+            rightHand.ring.pos = "dflick";
+          } else if (leftWrist == Wrist.OVER) {
+            speed += overwork(leftHand.middle, "home");
+            speed += overwork(leftHand.ring, "home");
             if (prevMove[0] == "D") {
               speed += double * ringMult + moveblock * 0.5;
             } else {
               speed += double * ringMult;
             }
-            L.ring.t = speed;
-            L.ring.pos = "dflick";
+            leftHand.ring.t = speed;
+            leftHand.ring.pos = "dflick";
           } else {
             return [
               j,
               speed,
-              lWrist,
-              rWrist,
-              lastFingerTime(L),
-              lastFingerTime(R),
+              leftWrist,
+              rightWrist,
+              lastFingerTime(leftHand),
+              lastFingerTime(rightHand),
             ];
           }
           break;
         case "L":
-          if (lWrist == 2) {
-            lWrist = 0;
-          } else if (lWrist > -1 && !(rWrist >= 1 && lWrist <= 0)) {
-            lWrist--;
+          if (leftWrist == Wrist.BROKEN) {
+            leftWrist = Wrist.NEUTRAL;
+          } else if (
+            leftWrist > Wrist.UNDER &&
+            !(rightWrist >= Wrist.OVER && leftWrist <= Wrist.NEUTRAL)
+          ) {
+            leftWrist--;
           } else {
             return [
               j,
               speed,
-              lWrist - 1,
-              rWrist,
-              lastFingerTime(L),
-              lastFingerTime(R),
+              leftWrist - 1,
+              rightWrist,
+              lastFingerTime(leftHand),
+              lastFingerTime(rightHand),
             ];
           }
           speed += wristMult;
           break;
         case "L'":
-          if (lWrist < 2 && !(rWrist <= -1 && lWrist >= 0)) {
-            lWrist++;
+          if (
+            leftWrist < Wrist.BROKEN &&
+            !(rightWrist <= Wrist.UNDER && leftWrist >= Wrist.NEUTRAL)
+          ) {
+            leftWrist++;
           } else {
             return [
               j,
               speed,
-              lWrist + 1,
-              rWrist,
-              lastFingerTime(L),
-              lastFingerTime(R),
+              leftWrist + 1,
+              rightWrist,
+              lastFingerTime(leftHand),
+              lastFingerTime(rightHand),
             ];
           }
           speed += wristMult;
           break;
         case "L2":
-          if (lWrist >= 1 && rWrist < 1) {
-            lWrist = -1;
-          } else if (rWrist > -1) {
-            lWrist += 2;
+          if (leftWrist >= Wrist.OVER && rightWrist < Wrist.OVER) {
+            leftWrist = Wrist.UNDER;
+          } else if (rightWrist > Wrist.UNDER) {
+            leftWrist += 2;
           } else {
             return [
               j,
               speed,
-              lWrist > 0 ? lWrist - 2 : lWrist + 2,
-              rWrist,
-              lastFingerTime(L),
-              lastFingerTime(R),
+              leftWrist > Wrist.NEUTRAL ? leftWrist - 2 : leftWrist + 2,
+              rightWrist,
+              lastFingerTime(leftHand),
+              lastFingerTime(rightHand),
             ];
           }
           speed += double * wristMult;
           break;
         case "B":
-          if (rWrist == 1) {
-            speed += overwork(R.index, "home");
+          if (rightWrist == Wrist.OVER) {
+            speed += overwork(rightHand.index, "home");
             speed += 1;
-            R.index.t = speed;
-            R.index.pos = "uflick";
-          } else if (lWrist == -1) {
-            speed += overwork(L.ring, "home");
-            speed += overwork(L.middle, "home");
+            rightHand.index.t = speed;
+            rightHand.index.pos = "uflick";
+          } else if (leftWrist == Wrist.UNDER) {
+            speed += overwork(leftHand.ring, "home");
+            speed += overwork(leftHand.middle, "home");
             if (prevMove[0] == "U") {
               speed += moveblock * 0.5 + ringMult;
             } else {
               speed += ringMult;
             }
-            L.ring.t = speed;
-            L.ring.pos = "dflick";
-          } else if (lWrist == 1 && prevMove[0] != "U" && prevMove[0] != "D") {
-            if (L.index.pos == "uflick") {
-              speed += overwork(L.index, "eido", 0.75 * overWorkMult);
-              speed = Math.max(speed, L.ohCool + 2.5);
+            leftHand.ring.t = speed;
+            leftHand.ring.pos = "dflick";
+          } else if (
+            leftWrist == Wrist.OVER &&
+            prevMove[0] != "U" &&
+            prevMove[0] != "D"
+          ) {
+            if (leftHand.index.pos == "uflick") {
+              speed += overwork(leftHand.index, "eido", 0.75 * overWorkMult);
+              speed = Math.max(speed, leftHand.ohCool + 2.5);
             } else {
-              speed += overwork(L.index, "eido", 1.25 * overWorkMult);
+              speed += overwork(leftHand.index, "eido", 1.25 * overWorkMult);
             }
             speed += 1.15 * pushMult;
-            L.index.t = speed;
-            L.index.pos = "uflick";
-            L.ohCool = speed;
-          } else if (lWrist == 0 && (rWrist == 1 || rWrist == -1)) {
-            speed += overwork(L.index, "top", 0.9 * overWorkMult);
+            leftHand.index.t = speed;
+            leftHand.index.pos = "uflick";
+            leftHand.ohCool = speed;
+          } else if (
+            leftWrist == Wrist.NEUTRAL &&
+            (rightWrist == Wrist.OVER || rightWrist == Wrist.UNDER)
+          ) {
+            speed += overwork(leftHand.index, "top", 0.9 * overWorkMult);
             if (prevMove[0] == "U") {
               speed += 1.45;
             } else {
               speed += 1;
             }
-            L.index.t = speed;
-            L.index.pos = "leftdb";
-          } else if (rWrist == -1 && prevMove[0] != "U") {
-            speed += overwork(R.ring, "dflick");
-            speed += overwork(R.middle, "home");
+            leftHand.index.t = speed;
+            leftHand.index.pos = "leftdb";
+          } else if (rightWrist == Wrist.UNDER && prevMove[0] != "U") {
+            speed += overwork(rightHand.ring, "dflick");
+            speed += overwork(rightHand.middle, "home");
             speed += ringMult * pushMult;
-            R.ring.t = speed;
-            R.ring.pos = "home";
+            rightHand.ring.t = speed;
+            rightHand.ring.pos = "home";
           } else {
             return [
               j,
               speed,
-              lWrist,
-              rWrist,
-              lastFingerTime(L),
-              lastFingerTime(R),
+              leftWrist,
+              rightWrist,
+              lastFingerTime(leftHand),
+              lastFingerTime(rightHand),
             ];
           }
           break;
         case "B'":
-          if (lWrist == 1) {
-            speed += overwork(L.index, "home");
+          if (leftWrist == Wrist.OVER) {
+            speed += overwork(leftHand.index, "home");
             speed += 1;
-            L.index.t = speed;
-            L.index.pos = "uflick";
-          } else if (rWrist == -1) {
-            speed += overwork(R.ring, "home");
-            speed += overwork(R.middle, "home");
+            leftHand.index.t = speed;
+            leftHand.index.pos = "uflick";
+          } else if (rightWrist == Wrist.UNDER) {
+            speed += overwork(rightHand.ring, "home");
+            speed += overwork(rightHand.middle, "home");
             if (prevMove[0] == "U") {
               speed += moveblock * 0.5 + ringMult;
             } else {
               speed += ringMult;
             }
-            R.ring.t = speed;
-            R.ring.pos = "dflick";
-          } else if (rWrist == 1 && prevMove[0] != "U" && prevMove[0] != "D") {
-            if (R.index.pos == "uflick") {
-              speed += overwork(R.index, "eido", 0.75 * overWorkMult);
-              speed = Math.max(speed, R.ohCool + 2.5);
+            rightHand.ring.t = speed;
+            rightHand.ring.pos = "dflick";
+          } else if (
+            rightWrist == Wrist.OVER &&
+            prevMove[0] != "U" &&
+            prevMove[0] != "D"
+          ) {
+            if (rightHand.index.pos == "uflick") {
+              speed += overwork(rightHand.index, "eido", 0.75 * overWorkMult);
+              speed = Math.max(speed, rightHand.ohCool + 2.5);
             } else {
-              speed += overwork(R.index, "eido", 1.25 * overWorkMult);
+              speed += overwork(rightHand.index, "eido", 1.25 * overWorkMult);
             }
             speed += 1.15 * pushMult;
-            R.index.t = speed;
-            R.index.pos = "uflick";
-            R.ohCool = speed;
-          } else if (rWrist == 0 && (lWrist == 1 || lWrist == -1)) {
-            speed += overwork(R.index, "top", 0.9 * overWorkMult);
+            rightHand.index.t = speed;
+            rightHand.index.pos = "uflick";
+            rightHand.ohCool = speed;
+          } else if (
+            rightWrist == Wrist.NEUTRAL &&
+            (leftWrist == Wrist.OVER || leftWrist == Wrist.UNDER)
+          ) {
+            speed += overwork(rightHand.index, "top", 0.9 * overWorkMult);
             if (prevMove[0] == "U") {
               speed += 1.45;
             } else {
               speed += 1;
             }
-            R.index.t = speed;
-            R.index.pos = "rightdb";
-          } else if (lWrist == -1 && prevMove[0] != "U") {
-            speed += overwork(L.ring, "dflick");
-            speed += overwork(L.middle, "home");
+            rightHand.index.t = speed;
+            rightHand.index.pos = "rightdb";
+          } else if (leftWrist == Wrist.UNDER && prevMove[0] != "U") {
+            speed += overwork(leftHand.ring, "dflick");
+            speed += overwork(leftHand.middle, "home");
             speed += ringMult * pushMult;
-            L.ring.t = speed;
-            L.ring.pos = "home";
+            leftHand.ring.t = speed;
+            leftHand.ring.pos = "home";
           } else {
             return [
               j,
               speed,
-              lWrist,
-              rWrist,
-              lastFingerTime(L),
-              lastFingerTime(R),
+              leftWrist,
+              rightWrist,
+              lastFingerTime(leftHand),
+              lastFingerTime(rightHand),
             ];
           }
           break;
         case "B2":
           if (
-            rWrist == 1 &&
-            (lWrist != 1 ||
+            rightWrist == Wrist.OVER &&
+            (leftWrist != Wrist.OVER ||
               Math.max(
-                overwork(R.index, "home"),
-                overwork(R.middle, "home"),
-                overwork(R.ring, "u2grip")
+                overwork(rightHand.index, "home"),
+                overwork(rightHand.middle, "home"),
+                overwork(rightHand.ring, "u2grip")
               ) <=
                 Math.max(
-                  overwork(L.index, "home"),
-                  overwork(L.middle, "home"),
-                  overwork(L.ring, "u2grip")
+                  overwork(leftHand.index, "home"),
+                  overwork(leftHand.middle, "home"),
+                  overwork(leftHand.ring, "u2grip")
                 ))
           ) {
-            speed += overwork(R.index, "home");
-            speed += overwork(R.middle, "home");
-            speed += overwork(R.ring, "u2grip");
+            speed += overwork(rightHand.index, "home");
+            speed += overwork(rightHand.middle, "home");
+            speed += overwork(rightHand.ring, "u2grip");
             speed += double;
-            R.index.t = speed;
-            R.index.pos = "uflick";
-            R.middle.t = speed;
-            R.middle.pos = "uflick";
-          } else if (lWrist == 1) {
-            speed += overwork(L.index, "home");
-            speed += overwork(L.middle, "home");
-            speed += overwork(L.ring, "u2grip");
+            rightHand.index.t = speed;
+            rightHand.index.pos = "uflick";
+            rightHand.middle.t = speed;
+            rightHand.middle.pos = "uflick";
+          } else if (leftWrist == Wrist.OVER) {
+            speed += overwork(leftHand.index, "home");
+            speed += overwork(leftHand.middle, "home");
+            speed += overwork(leftHand.ring, "u2grip");
             speed += double;
-            L.index.t = speed;
-            L.index.pos = "uflick";
-            L.middle.t = speed;
-            L.middle.pos = "uflick";
+            leftHand.index.t = speed;
+            leftHand.index.pos = "uflick";
+            leftHand.middle.t = speed;
+            leftHand.middle.pos = "uflick";
           } else if (
-            lWrist == -1 &&
-            (rWrist != -1 ||
-              Math.max(overwork(R.middle, "home"), overwork(R.ring, "home")) >
-                Math.max(overwork(L.middle, "home"), overwork(L.ring, "home")))
+            leftWrist == Wrist.UNDER &&
+            (rightWrist != Wrist.UNDER ||
+              Math.max(
+                overwork(rightHand.middle, "home"),
+                overwork(rightHand.ring, "home")
+              ) >
+                Math.max(
+                  overwork(leftHand.middle, "home"),
+                  overwork(leftHand.ring, "home")
+                ))
           ) {
-            speed += overwork(L.middle, "home");
-            speed += overwork(L.ring, "home");
+            speed += overwork(leftHand.middle, "home");
+            speed += overwork(leftHand.ring, "home");
             if (prevMove[0] == "U") {
               speed += moveblock * 0.5 + double * ringMult;
             } else {
               speed += double * ringMult;
             }
-            L.ring.t = speed;
-            L.ring.pos = "dflick";
-          } else if (rWrist == -1) {
-            speed += overwork(R.middle, "home");
-            speed += overwork(R.ring, "home");
+            leftHand.ring.t = speed;
+            leftHand.ring.pos = "dflick";
+          } else if (rightWrist == Wrist.UNDER) {
+            speed += overwork(rightHand.middle, "home");
+            speed += overwork(rightHand.ring, "home");
             if (prevMove[0] == "U") {
               speed += moveblock * 0.5 + double * ringMult;
             } else {
               speed += double * ringMult;
             }
-            R.ring.t = speed;
-            R.ring.pos = "dflick";
+            rightHand.ring.t = speed;
+            rightHand.ring.pos = "dflick";
           } else {
             return [
               j,
               speed,
-              lWrist,
-              rWrist,
-              lastFingerTime(L),
-              lastFingerTime(R),
+              leftWrist,
+              rightWrist,
+              lastFingerTime(leftHand),
+              lastFingerTime(rightHand),
             ];
           }
           break;
         case "S":
           if (
-            rWrist == 0 &&
-            (lWrist != 0 ||
-              overwork(R.index, "top", 1.25 * overWorkMult) <=
+            rightWrist == Wrist.NEUTRAL &&
+            (leftWrist != Wrist.NEUTRAL ||
+              overwork(rightHand.index, "top", 1.25 * overWorkMult) <=
                 (moveblock * 0.5 + pushMult - 1) * sesliceMult)
           ) {
-            speed += overwork(R.index, "top", 1.25 * overWorkMult);
+            speed += overwork(rightHand.index, "top", 1.25 * overWorkMult);
             speed += sesliceMult;
-            R.index.t = speed;
-            R.index.pos = "sflick";
-          } else if (lWrist == 0 && rWrist == -1) {
-            speed += overwork(R.index, "home", 1.25 * overWorkMult);
-            speed += overwork(R.thumb, "top", 1.25 * overWorkMult);
-            speed += overwork(R.middle, "home", 1.25 * overWorkMult);
+            rightHand.index.t = speed;
+            rightHand.index.pos = "sflick";
+          } else if (leftWrist == Wrist.NEUTRAL && rightWrist == Wrist.UNDER) {
+            speed += overwork(rightHand.index, "home", 1.25 * overWorkMult);
+            speed += overwork(rightHand.thumb, "top", 1.25 * overWorkMult);
+            speed += overwork(rightHand.middle, "home", 1.25 * overWorkMult);
             speed += sesliceMult;
-            R.thumb.t = speed;
-            R.thumb.pos = "top";
-            R.middle.t = speed;
-            R.middle.pos = "eflick";
+            rightHand.thumb.t = speed;
+            rightHand.thumb.pos = "top";
+            rightHand.middle.t = speed;
+            rightHand.middle.pos = "eflick";
           } else if (
-            lWrist == 0 &&
-            (rWrist == 0 ||
-              (rWrist == 1 && (prevMove == "R" || prevMove == "L")))
+            leftWrist == Wrist.NEUTRAL &&
+            (rightWrist == Wrist.NEUTRAL ||
+              (rightWrist == Wrist.OVER &&
+                (prevMove == "R" || prevMove == "L")))
           ) {
-            speed += overwork(L.index, "uflick", 1.25 * overWorkMult);
+            speed += overwork(leftHand.index, "uflick", 1.25 * overWorkMult);
             if (prevMove[0] == "U") {
               speed += moveblock * 0.5 + pushMult * sesliceMult;
             } else {
               speed += pushMult * sesliceMult;
             }
-            L.index.t = speed;
-            L.index.pos = "top";
+            leftHand.index.t = speed;
+            leftHand.index.pos = "top";
           } else {
             return [
               j,
               speed,
-              lWrist,
-              rWrist,
-              lastFingerTime(L),
-              lastFingerTime(R),
+              leftWrist,
+              rightWrist,
+              lastFingerTime(leftHand),
+              lastFingerTime(rightHand),
             ];
           }
           break;
         case "S'":
           if (
-            lWrist == 0 &&
-            (rWrist != 0 ||
-              overwork(L.index, "top", 1.25 * overWorkMult) <=
+            leftWrist == Wrist.NEUTRAL &&
+            (rightWrist != Wrist.NEUTRAL ||
+              overwork(leftHand.index, "top", 1.25 * overWorkMult) <=
                 (moveblock * 0.5 + pushMult - 1) * sesliceMult)
           ) {
-            speed += overwork(L.index, "top", 1.25 * overWorkMult);
+            speed += overwork(leftHand.index, "top", 1.25 * overWorkMult);
             speed += sesliceMult;
-            L.index.t = speed;
-            L.index.pos = "sflick";
-          } else if (rWrist == 0 && lWrist == -1) {
-            speed += overwork(L.index, "home", 1.25 * overWorkMult);
-            speed += overwork(L.thumb, "bottom", 1.25 * overWorkMult);
-            speed += overwork(L.middle, "home", 1.25 * overWorkMult);
+            leftHand.index.t = speed;
+            leftHand.index.pos = "sflick";
+          } else if (rightWrist == Wrist.NEUTRAL && leftWrist == Wrist.UNDER) {
+            speed += overwork(leftHand.index, "home", 1.25 * overWorkMult);
+            speed += overwork(leftHand.thumb, "bottom", 1.25 * overWorkMult);
+            speed += overwork(leftHand.middle, "home", 1.25 * overWorkMult);
             speed += sesliceMult;
-            L.thumb.t = speed;
-            L.thumb.pos = "top";
-            L.middle.t = speed;
-            L.middle.pos = "eflick";
+            leftHand.thumb.t = speed;
+            leftHand.thumb.pos = "top";
+            leftHand.middle.t = speed;
+            leftHand.middle.pos = "eflick";
           } else if (
-            rWrist == 0 &&
-            (lWrist == 0 ||
-              (lWrist == 1 && (prevMove == "R" || prevMove == "L")))
+            rightWrist == Wrist.NEUTRAL &&
+            (leftWrist == Wrist.NEUTRAL ||
+              (leftWrist == Wrist.OVER && (prevMove == "R" || prevMove == "L")))
           ) {
-            speed += overwork(R.index, "uflick", 1.25 * overWorkMult);
+            speed += overwork(rightHand.index, "uflick", 1.25 * overWorkMult);
             if (prevMove[0] == "U") {
               speed += moveblock * 0.5 + pushMult * sesliceMult;
             } else {
               speed += pushMult * sesliceMult;
             }
-            R.index.t = speed;
-            R.index.pos = "top";
+            rightHand.index.t = speed;
+            rightHand.index.pos = "top";
           } else {
             return [
               j,
               speed,
-              lWrist,
-              rWrist,
-              lastFingerTime(L),
-              lastFingerTime(R),
+              leftWrist,
+              rightWrist,
+              lastFingerTime(leftHand),
+              lastFingerTime(rightHand),
             ];
           }
           break;
         case "S2":
-          if ((rWrist == -1 || rWrist == 1) && lWrist == 0) {
-            speed += overwork(R.thumb, "home");
-            speed += overwork(R.index, "home");
-            speed += overwork(R.middle, "home");
-            speed += overwork(R.ring, "u2grip");
+          if (
+            (rightWrist == Wrist.UNDER || rightWrist == Wrist.OVER) &&
+            leftWrist == Wrist.NEUTRAL
+          ) {
+            speed += overwork(rightHand.thumb, "home");
+            speed += overwork(rightHand.index, "home");
+            speed += overwork(rightHand.middle, "home");
+            speed += overwork(rightHand.ring, "u2grip");
             speed += sesliceMult * double;
-            R.middle.t = speed;
-            R.middle.pos = "e";
-            R.index.t = speed;
-            R.index.pos = "e";
-          } else if ((lWrist == -1 || lWrist == 1) && rWrist == 0) {
-            speed += overwork(L.thumb, "home");
-            speed += overwork(L.index, "home");
-            speed += overwork(L.middle, "home");
-            speed += overwork(L.ring, "u2grip");
+            rightHand.middle.t = speed;
+            rightHand.middle.pos = "e";
+            rightHand.index.t = speed;
+            rightHand.index.pos = "e";
+          } else if (
+            (leftWrist == Wrist.UNDER || leftWrist == Wrist.OVER) &&
+            rightWrist == Wrist.NEUTRAL
+          ) {
+            speed += overwork(leftHand.thumb, "home");
+            speed += overwork(leftHand.index, "home");
+            speed += overwork(leftHand.middle, "home");
+            speed += overwork(leftHand.ring, "u2grip");
             speed += sesliceMult * double;
-            L.middle.t = speed;
-            L.middle.pos = "e";
-            L.index.t = speed;
-            L.index.pos = "e";
+            leftHand.middle.t = speed;
+            leftHand.middle.pos = "e";
+            leftHand.index.t = speed;
+            leftHand.index.pos = "e";
           } else {
             return [
               j,
               speed,
-              lWrist,
-              rWrist,
-              lastFingerTime(L),
-              lastFingerTime(R),
+              leftWrist,
+              rightWrist,
+              lastFingerTime(leftHand),
+              lastFingerTime(rightHand),
             ];
           }
           break;
         case "E":
-          if ((rWrist == 1 || rWrist == -1) && lWrist == 0) {
-            speed += overwork(L.index, "home");
+          if (
+            (rightWrist == Wrist.OVER || rightWrist == Wrist.UNDER) &&
+            leftWrist == Wrist.NEUTRAL
+          ) {
+            speed += overwork(leftHand.index, "home");
             speed += sesliceMult;
-            L.index.t = speed;
-            L.index.pos = "e";
+            leftHand.index.t = speed;
+            leftHand.index.pos = "e";
           } else if (
-            (lWrist == 1 || lWrist == -1) &&
-            rWrist == 0 &&
+            (leftWrist == Wrist.OVER || leftWrist == Wrist.UNDER) &&
+            rightWrist == Wrist.NEUTRAL &&
             prevMove[0] != "B"
           ) {
-            speed += overwork(R.index, "e");
+            speed += overwork(rightHand.index, "e");
             speed += sesliceMult * pushMult;
-            R.index.t = speed;
-            R.index.pos = "home";
+            rightHand.index.t = speed;
+            rightHand.index.pos = "home";
           } else {
             return [
               j,
               speed,
-              lWrist,
-              rWrist,
-              lastFingerTime(L),
-              lastFingerTime(R),
+              leftWrist,
+              rightWrist,
+              lastFingerTime(leftHand),
+              lastFingerTime(rightHand),
             ];
           }
           break;
         case "E'":
-          if ((lWrist == 1 || lWrist == -1) && rWrist == 0) {
-            speed += overwork(R.index, "home");
+          if (
+            (leftWrist == Wrist.OVER || leftWrist == Wrist.UNDER) &&
+            rightWrist == Wrist.NEUTRAL
+          ) {
+            speed += overwork(rightHand.index, "home");
             speed += sesliceMult;
-            R.index.t = speed;
-            R.index.pos = "e";
+            rightHand.index.t = speed;
+            rightHand.index.pos = "e";
           } else if (
-            (rWrist == 1 || rWrist == -1) &&
-            lWrist == 0 &&
+            (rightWrist == Wrist.OVER || rightWrist == Wrist.UNDER) &&
+            leftWrist == Wrist.NEUTRAL &&
             prevMove[0] != "B"
           ) {
-            speed += overwork(L.index, "e");
+            speed += overwork(leftHand.index, "e");
             speed += sesliceMult * pushMult;
-            L.index.t = speed;
-            L.index.pos = "home";
+            leftHand.index.t = speed;
+            leftHand.index.pos = "home";
           } else {
             return [
               j,
               speed,
-              lWrist,
-              rWrist,
-              lastFingerTime(L),
-              lastFingerTime(R),
+              leftWrist,
+              rightWrist,
+              lastFingerTime(leftHand),
+              lastFingerTime(rightHand),
             ];
           }
           break;
         case "E2":
-          if ((lWrist == 1 || lWrist == -1) && rWrist == 0) {
-            speed += overwork(R.index, "home");
-            speed += overwork(R.middle, "home");
-            speed += overwork(R.ring, "u2grip");
+          if (
+            (leftWrist == Wrist.OVER || leftWrist == Wrist.UNDER) &&
+            rightWrist == Wrist.NEUTRAL
+          ) {
+            speed += overwork(rightHand.index, "home");
+            speed += overwork(rightHand.middle, "home");
+            speed += overwork(rightHand.ring, "u2grip");
             speed += sesliceMult * double;
-            R.index.t = speed;
-            R.index.pos = "e";
-            R.middle.t = speed;
-            R.middle.pos = "e";
-          } else if ((rWrist == 1 || rWrist == -1) && lWrist == 0) {
-            speed += overwork(L.index, "home");
-            speed += overwork(L.middle, "home");
-            speed += overwork(L.ring, "u2grip");
+            rightHand.index.t = speed;
+            rightHand.index.pos = "e";
+            rightHand.middle.t = speed;
+            rightHand.middle.pos = "e";
+          } else if (
+            (rightWrist == Wrist.OVER || rightWrist == Wrist.UNDER) &&
+            leftWrist == Wrist.NEUTRAL
+          ) {
+            speed += overwork(leftHand.index, "home");
+            speed += overwork(leftHand.middle, "home");
+            speed += overwork(leftHand.ring, "u2grip");
             speed += sesliceMult * double;
-            L.index.t = speed;
-            L.index.pos = "e";
-            L.middle.t = speed;
-            L.middle.pos = "e";
+            leftHand.index.t = speed;
+            leftHand.index.pos = "e";
+            leftHand.middle.t = speed;
+            leftHand.middle.pos = "e";
           } else {
             return [
               j,
               speed,
-              lWrist,
-              rWrist,
-              lastFingerTime(L),
-              lastFingerTime(R),
+              leftWrist,
+              rightWrist,
+              lastFingerTime(leftHand),
+              lastFingerTime(rightHand),
             ];
           }
           break;
         case "M'":
-          if (lWrist == 0) {
-            speed += overwork(L.thumb, "home");
-            speed += overwork(L.index, "m");
-            speed += overwork(L.middle, "m");
-            speed += overwork(L.ring, "m");
+          if (leftWrist == Wrist.NEUTRAL) {
+            speed += overwork(leftHand.thumb, "home");
+            speed += overwork(leftHand.index, "m");
+            speed += overwork(leftHand.middle, "m");
+            speed += overwork(leftHand.ring, "m");
             if (prevMove[0] == "B") {
               speed += 1.8;
             } else {
               speed += 1;
             }
-            L.thumb.t = speed;
-            L.thumb.pos = "home";
-            L.index.t = speed;
-            L.index.pos = "m";
-            L.middle.t = speed;
-            L.middle.pos = "mflick";
-            L.ring.t = speed;
-            L.ring.pos = "m";
+            leftHand.thumb.t = speed;
+            leftHand.thumb.pos = "home";
+            leftHand.index.t = speed;
+            leftHand.index.pos = "m";
+            leftHand.middle.t = speed;
+            leftHand.middle.pos = "mflick";
+            leftHand.ring.t = speed;
+            leftHand.ring.pos = "m";
           } else {
             return [
               j,
               speed,
-              lWrist,
-              rWrist,
-              lastFingerTime(L),
-              lastFingerTime(R),
+              leftWrist,
+              rightWrist,
+              lastFingerTime(leftHand),
+              lastFingerTime(rightHand),
             ];
           }
           break;
         case "M":
-          if (lWrist == 0 && prevMove[0] != "B") {
-            speed += overwork(L.thumb, "home");
-            speed += overwork(L.index, "m");
-            speed += overwork(L.middle, "mflick", 1.25 * overWorkMult);
-            speed += overwork(L.ring, "m");
+          if (leftWrist == Wrist.NEUTRAL && prevMove[0] != "B") {
+            speed += overwork(leftHand.thumb, "home");
+            speed += overwork(leftHand.index, "m");
+            speed += overwork(leftHand.middle, "mflick", 1.25 * overWorkMult);
+            speed += overwork(leftHand.ring, "m");
             speed += pushMult;
-            L.thumb.t = speed;
-            L.thumb.pos = "home";
-            L.index.t = speed;
-            L.index.pos = "m";
-            L.middle.t = speed;
-            L.middle.pos = "m";
-            L.ring.t = speed;
-            L.ring.pos = "m";
+            leftHand.thumb.t = speed;
+            leftHand.thumb.pos = "home";
+            leftHand.index.t = speed;
+            leftHand.index.pos = "m";
+            leftHand.middle.t = speed;
+            leftHand.middle.pos = "m";
+            leftHand.ring.t = speed;
+            leftHand.ring.pos = "m";
           } else {
             return [
               j,
               speed,
-              lWrist,
-              rWrist,
-              lastFingerTime(L),
-              lastFingerTime(R),
+              leftWrist,
+              rightWrist,
+              lastFingerTime(leftHand),
+              lastFingerTime(rightHand),
             ];
           }
           break;
         case "M2":
-          if (lWrist == 0) {
-            speed += overwork(L.thumb, "home");
-            speed += overwork(L.index, "m");
-            speed += overwork(L.middle, "m");
-            speed += overwork(L.ring, "m");
+          if (leftWrist == Wrist.NEUTRAL) {
+            speed += overwork(leftHand.thumb, "home");
+            speed += overwork(leftHand.index, "m");
+            speed += overwork(leftHand.middle, "m");
+            speed += overwork(leftHand.ring, "m");
             if (prevMove[0] == "B") {
               speed += moveblock + double;
             } else {
               speed += double;
             }
-            L.thumb.t = speed;
-            L.thumb.pos = "home";
-            L.index.t = speed;
-            L.index.pos = "m";
-            L.middle.t = speed;
-            L.middle.pos = "mflick";
-            L.ring.t = speed;
-            L.ring.pos = "m";
+            leftHand.thumb.t = speed;
+            leftHand.thumb.pos = "home";
+            leftHand.index.t = speed;
+            leftHand.index.pos = "m";
+            leftHand.middle.t = speed;
+            leftHand.middle.pos = "mflick";
+            leftHand.ring.t = speed;
+            leftHand.ring.pos = "m";
           } else {
             return [
               j,
               speed,
-              lWrist,
-              rWrist,
-              lastFingerTime(L),
-              lastFingerTime(R),
+              leftWrist,
+              rightWrist,
+              lastFingerTime(leftHand),
+              lastFingerTime(rightHand),
             ];
           }
           break;
         case "X":
-          lWrist += 1;
-          rWrist += 1;
-          if (lWrist > 1 || rWrist > 1) {
+          leftWrist += 1;
+          rightWrist += 1;
+          if (leftWrist > Wrist.OVER || rightWrist > Wrist.OVER) {
             return [
               j + 1,
               speed,
-              lWrist,
-              rWrist,
-              lastFingerTime(L),
-              lastFingerTime(R),
+              leftWrist,
+              rightWrist,
+              lastFingerTime(leftHand),
+              lastFingerTime(rightHand),
             ];
           }
           break;
         case "X'":
-          lWrist -= 1;
-          rWrist -= 1;
-          if (lWrist < -1 || rWrist < -1) {
+          leftWrist -= 1;
+          rightWrist -= 1;
+          if (leftWrist < Wrist.UNDER || rightWrist < Wrist.UNDER) {
             return [
               j + 1,
               speed,
-              lWrist,
-              rWrist,
-              lastFingerTime(L),
-              lastFingerTime(R),
+              leftWrist,
+              rightWrist,
+              lastFingerTime(leftHand),
+              lastFingerTime(rightHand),
             ];
           }
           break;
         case "X2":
-          if (lWrist >= 1 && rWrist >= 1) {
-            lWrist -= 2;
-            rWrist -= 2;
-          } else if (lWrist <= -1 && rWrist <= -1) {
-            lWrist += 2;
-            rWrist += 2;
-          } else if (lWrist + rWrist > 0) {
+          if (leftWrist >= Wrist.OVER && rightWrist >= Wrist.OVER) {
+            leftWrist -= 2;
+            rightWrist -= 2;
+          } else if (leftWrist <= Wrist.UNDER && rightWrist <= Wrist.UNDER) {
+            leftWrist += 2;
+            rightWrist += 2;
+          } else if (leftWrist + rightWrist > Wrist.NEUTRAL) {
             return [
               j,
               speed,
-              lWrist - 2,
-              rWrist - 2,
-              lastFingerTime(L),
-              lastFingerTime(R),
+              leftWrist - 2,
+              rightWrist - 2,
+              lastFingerTime(leftHand),
+              lastFingerTime(rightHand),
             ];
           } else {
             return [
               j,
               speed,
-              lWrist + 2,
-              rWrist + 2,
-              lastFingerTime(L),
-              lastFingerTime(R),
+              leftWrist + 2,
+              rightWrist + 2,
+              lastFingerTime(leftHand),
+              lastFingerTime(rightHand),
             ];
           }
           break;
@@ -1193,12 +1315,26 @@ export function algSpeed(
         case "Z":
         case "Z'":
           speed += rotation;
-          return [j + 1, speed, 0, 0, lastFingerTime(L), lastFingerTime(R)];
+          return [
+            j + 1,
+            speed,
+            Wrist.NEUTRAL,
+            Wrist.NEUTRAL,
+            lastFingerTime(leftHand),
+            lastFingerTime(rightHand),
+          ];
           break;
         case "Y2":
         case "Z2":
           speed += rotation * double;
-          return [j + 1, speed, 0, 0, lastFingerTime(L), lastFingerTime(R)];
+          return [
+            j + 1,
+            speed,
+            Wrist.NEUTRAL,
+            Wrist.NEUTRAL,
+            lastFingerTime(leftHand),
+            lastFingerTime(rightHand),
+          ];
           break;
         default:
           return "Unknown move: " + move;
@@ -1236,7 +1372,7 @@ export function algSpeed(
           (normalMove == "R" &&
             move == splitSeq[j - 2] &&
             splitSeq[j - 1].toUpperCase() == "D'" &&
-            rWrist == 1) ||
+            rightWrist == Wrist.OVER) ||
           (normalMove == "R'" &&
             move == splitSeq[j - 2] &&
             splitSeq[j - 1].toUpperCase() == "D")
@@ -1244,25 +1380,41 @@ export function algSpeed(
           speed -= 0.3;
         }
       }
-      if (normalMove == "U" && (lWrist == -1 || rWrist == -1)) {
+      if (
+        normalMove == "U" &&
+        (leftWrist == Wrist.UNDER || rightWrist == Wrist.UNDER)
+      ) {
         speed += destabilize;
       }
-      if (normalMove == "B" && (lWrist == 0 || rWrist == 0)) {
+      if (
+        normalMove == "B" &&
+        (leftWrist == Wrist.NEUTRAL || rightWrist == Wrist.NEUTRAL)
+      ) {
         speed += destabilize;
       }
-      if (normalMove == "D" && (lWrist == 1 || rWrist == 1)) {
+      if (
+        normalMove == "D" &&
+        (leftWrist == Wrist.OVER || rightWrist == Wrist.OVER)
+      ) {
         speed += destabilize;
       }
       if (
         normalMove == "S" &&
-        (lWrist == 1 || rWrist == 1 || lWrist == -1 || rWrist == -1)
+        (leftWrist == Wrist.OVER ||
+          rightWrist == Wrist.OVER ||
+          leftWrist == Wrist.UNDER ||
+          rightWrist == Wrist.UNDER)
       ) {
         speed += destabilize;
       }
-      if (normalMove == "E" && (lWrist == 0 || rWrist == 0)) {
+      if (
+        normalMove == "E" &&
+        (leftWrist == Wrist.NEUTRAL || rightWrist == Wrist.NEUTRAL)
+      ) {
         speed += destabilize;
       }
     }
+
     return [-1, speed, lGrip, rGrip];
   }
   let splitSeq = sequence.split(" ");
@@ -1345,11 +1497,11 @@ export function algSpeed(
   }
 
   let tests = [
-    test(splitSeq, 0, 0, 0),
-    test(splitSeq, 0, -1, 1 + addRegrip),
-    test(splitSeq, 0, 1, 1 + addRegrip),
-    test(splitSeq, -1, 0, 1 + addRegrip),
-    test(splitSeq, 1, 0, 1 + addRegrip),
+    test(splitSeq, Wrist.NEUTRAL, Wrist.NEUTRAL, 0),
+    test(splitSeq, Wrist.NEUTRAL, Wrist.UNDER, 1 + addRegrip),
+    test(splitSeq, Wrist.NEUTRAL, Wrist.OVER, 1 + addRegrip),
+    test(splitSeq, Wrist.UNDER, Wrist.NEUTRAL, 1 + addRegrip),
+    test(splitSeq, Wrist.OVER, Wrist.NEUTRAL, 1 + addRegrip),
   ];
 
   while (true) {
@@ -1387,14 +1539,18 @@ export function algSpeed(
     let doubleRegrip = false;
 
     if (
-      (bestTest[2] > 1 || bestTest[2] < -1) &&
-      (bestTest[3] > 1 || bestTest[3] < -1)
+      (bestTest[2] > Wrist.OVER || bestTest[2] < Wrist.UNDER) &&
+      (bestTest[3] > Wrist.OVER || bestTest[3] < Wrist.UNDER)
     ) {
       doubleRegrip = true;
     }
 
-    for (let leftWrist = -1; leftWrist < 2; leftWrist++) {
-      for (let rightWrist = -1; rightWrist < 2; rightWrist++) {
+    for (let leftWrist = Wrist.UNDER; leftWrist < Wrist.BROKEN; leftWrist++) {
+      for (
+        let rightWrist = Wrist.UNDER;
+        rightWrist < Wrist.BROKEN;
+        rightWrist++
+      ) {
         let leftMatch = bestTest[2] == leftWrist;
         let rightMatch = bestTest[3] == rightWrist;
         if (["X", "x", "Y", "y", "Z", "z"].includes(prevMoveType)) {
