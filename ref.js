@@ -13,17 +13,38 @@ export function algSpeed(
   moveblock = 0.8,
   rotation = 3.5
 ) {
+  const Wrist = {
+    UNDER: -1,
+    NEUTRAL: 0,
+    OVER: 1,
+    BROKEN: 2,
+  };
+
+  function finger() {
+    return {
+      t: -1, // last action time
+      pos: "home", // current position
+    };
+  }
+
+  function hand() {
+    return {
+      thumb: finger(),
+      index: finger(),
+      middle: finger(),
+      ring: finger(),
+      ohCool: -1,
+    };
+  }
+
+  function lastFingerTime(hand) {
+    return Math.max(hand.thumb.t, hand.index.t, hand.middle.t, hand.ring.t);
+  }
+
   function test(splitSeq, lGrip, rGrip, speed) {
-    let lThumb = [-1, "home"]; // -1 to represent the time during AUF that you can set your fingers up
-    let lIndex = [-1, "home"];
-    let lMiddle = [-1, "home"];
-    let lRing = [-1, "home"];
-    let rThumb = [-1, "home"];
-    let rIndex = [-1, "home"];
-    let rMiddle = [-1, "home"];
-    let rRing = [-1, "home"];
-    let lOhCool = -1;
-    let rOhCool = -1;
+    const L = hand();
+    const R = hand();
+
     let lWrist = lGrip;
     let rWrist = rGrip;
     let grip = 1;
@@ -31,10 +52,11 @@ export function algSpeed(
     let prevSpeed = null;
     let firstMoveSpeed = null;
 
-    function overwork(finger, locationPrefer, penalty = overWorkMult) {
-      if (finger[1] != locationPrefer) {
-        if (speed - finger[0] < penalty) {
-          return penalty - speed + finger[0];
+    function overwork(f, preferred, penalty = overWorkMult) {
+      if (f.pos !== preferred) {
+        const delta = speed - f.t;
+        if (delta < penalty) {
+          return penalty - delta;
         }
       }
       return 0;
@@ -67,8 +89,8 @@ export function algSpeed(
               speed,
               lWrist,
               rWrist - 1,
-              Math.max(lThumb[0], lIndex[0], lMiddle[0], lRing[0]),
-              Math.max(rThumb[0], rIndex[0], rMiddle[0], rRing[0]),
+              lastFingerTime(L),
+              lastFingerTime(R),
             ];
           }
           speed += wristMult;
@@ -82,8 +104,8 @@ export function algSpeed(
               speed,
               lWrist,
               rWrist + 1,
-              Math.max(lThumb[0], lIndex[0], lMiddle[0], lRing[0]),
-              Math.max(rThumb[0], rIndex[0], rMiddle[0], rRing[0]),
+              lastFingerTime(L),
+              lastFingerTime(R),
             ];
           }
           speed += wristMult;
@@ -99,8 +121,8 @@ export function algSpeed(
               speed,
               lWrist,
               rWrist > 0 ? rWrist - 2 : rWrist + 2,
-              Math.max(lThumb[0], lIndex[0], lMiddle[0], lRing[0]),
-              Math.max(rThumb[0], rIndex[0], rMiddle[0], rRing[0]),
+              lastFingerTime(L),
+              lastFingerTime(R),
             ];
           }
           speed += double * wristMult;
@@ -108,21 +130,24 @@ export function algSpeed(
         case "U":
           if (
             rWrist == 0 &&
-            (rThumb[0] + overWorkMult <= speed || rThumb[1] != "top") &&
-            rIndex[1] != "m"
+            (R.thumb.t + overWorkMult <= speed || R.thumb.pos != "top") &&
+            R.index.pos != "m"
           ) {
-            if (overwork(rIndex, "home") <= overwork(rMiddle, "home")) {
-              speed += overwork(rIndex, "home");
-              speed++;
-              rIndex = [speed, "uflick"];
+            if (overwork(R.index, "home") <= overwork(R.middle, "home")) {
+              speed += overwork(R.index, "home");
+              speed += 1;
+              R.index.t = speed;
+              R.index.pos = "uflick";
             } else {
-              speed += overwork(rMiddle, "home");
-              speed++;
-              rIndex = [speed, "uflick"];
-              rMiddle = [speed, "uflick"];
+              speed += overwork(R.middle, "home");
+              speed += 1;
+              R.index.t = speed;
+              R.index.pos = "uflick";
+              R.middle.t = speed;
+              R.middle.pos = "uflick";
             }
           } else if (rWrist == 1 && lWrist == 0) {
-            speed += overwork(lIndex, "uflick");
+            speed += overwork(L.index, "uflick");
             if (prevMove == "B'") {
               speed += moveblock + pushMult;
             } else if (prevMove[0] == "B'") {
@@ -130,46 +155,51 @@ export function algSpeed(
             } else {
               speed += pushMult;
             }
-            lIndex = [speed, "home"];
+            L.index.t = speed;
+            L.index.pos = "home";
           } else if (lWrist == 0 && prevMove[0] != "F" && prevMove[0] != "B") {
-            if (lIndex[1] == "uflick") {
-              speed += overwork(lIndex, "eido", 0.75 * overWorkMult);
-              speed = Math.max(speed, lOhCool + 2.5);
+            if (L.index.pos == "uflick") {
+              speed += overwork(L.index, "eido", 0.75 * overWorkMult);
+              speed = Math.max(speed, L.ohCool + 2.5);
             } else {
-              speed += overwork(lIndex, "eido", 1.25 * overWorkMult);
+              speed += overwork(L.index, "eido", 1.25 * overWorkMult);
             }
             speed += 1.15 * pushMult;
-            lIndex = [speed, "uflick"];
-            lOhCool = speed;
+            L.index.t = speed;
+            L.index.pos = "uflick";
+            L.ohCool = speed;
           } else {
             return [
               j,
               speed,
               lWrist,
               rWrist,
-              Math.max(lThumb[0], lIndex[0], lMiddle[0], lRing[0]),
-              Math.max(rThumb[0], rIndex[0], rMiddle[0], rRing[0]),
+              lastFingerTime(L),
+              lastFingerTime(R),
             ];
           }
           break;
         case "U'":
           if (
             lWrist == 0 &&
-            (lThumb[0] + overWorkMult <= speed || lThumb[1] != "top") &&
-            lIndex[1] != "m"
+            (L.thumb.t + overWorkMult <= speed || L.thumb.pos != "top") &&
+            L.index.pos != "m"
           ) {
-            if (overwork(lIndex, "home") <= overwork(lMiddle, "home")) {
-              speed += overwork(lIndex, "home");
-              speed++;
-              lIndex = [speed, "uflick"];
+            if (overwork(L.index, "home") <= overwork(L.middle, "home")) {
+              speed += overwork(L.index, "home");
+              speed += 1;
+              L.index.t = speed;
+              L.index.pos = "uflick";
             } else {
-              speed += overwork(lMiddle, "home");
-              speed++;
-              lIndex = [speed, "uflick"];
-              lMiddle = [speed, "uflick"];
+              speed += overwork(L.middle, "home");
+              speed += 1;
+              L.index.t = speed;
+              L.index.pos = "uflick";
+              L.middle.t = speed;
+              L.middle.pos = "uflick";
             }
           } else if (lWrist == 1 && rWrist == 0) {
-            speed += overwork(rIndex, "uflick");
+            speed += overwork(R.index, "uflick");
             if (prevMove == "B") {
               speed += moveblock + pushMult;
             } else if (prevMove[0] == "B'") {
@@ -177,65 +207,71 @@ export function algSpeed(
             } else {
               speed += pushMult;
             }
-            rIndex = [speed, "home"];
+            R.index.t = speed;
+            R.index.pos = "home";
           } else if (rWrist == 0 && prevMove[0] != "F" && prevMove[0] != "B") {
-            if (rIndex[1] == "uflick") {
-              speed += overwork(rIndex, "eido", 0.75 * overWorkMult);
-              speed = Math.max(speed, rOhCool + 2.5);
+            if (R.index.pos == "uflick") {
+              speed += overwork(R.index, "eido", 0.75 * overWorkMult);
+              speed = Math.max(speed, R.ohCool + 2.5);
             } else {
-              speed += overwork(rIndex, "eido", 1.25 * overWorkMult);
+              speed += overwork(R.index, "eido", 1.25 * overWorkMult);
             }
             speed += 1.15 * pushMult;
-            rIndex = [speed, "uflick"];
-            rOhCool = speed;
+            R.index.t = speed;
+            R.index.pos = "uflick";
+            R.ohCool = speed;
           } else {
             return [
               j,
               speed,
               lWrist,
               rWrist,
-              Math.max(lThumb[0], lIndex[0], lMiddle[0], lRing[0]),
-              Math.max(rThumb[0], rIndex[0], rMiddle[0], rRing[0]),
+              lastFingerTime(L),
+              lastFingerTime(R),
             ];
           }
           break;
         case "U2":
           if (
             rWrist == 0 &&
-            (lIndex[1] == "m" ||
+            (L.index.pos == "m" ||
               lWrist != 0 ||
               Math.max(
-                overwork(rIndex, "home"),
-                overwork(rMiddle, "home"),
-                overwork(rRing, "u2grip")
+                overwork(R.index, "home"),
+                overwork(R.middle, "home"),
+                overwork(R.ring, "u2grip")
               ) <=
                 Math.max(
-                  overwork(lIndex, "home"),
-                  overwork(lMiddle, "home"),
-                  overwork(lRing, "u2grip")
+                  overwork(L.index, "home"),
+                  overwork(L.middle, "home"),
+                  overwork(L.ring, "u2grip")
                 ))
           ) {
-            speed += overwork(rIndex, "home");
-            speed += overwork(rMiddle, "home");
-            speed += overwork(rRing, "u2grip", moveblock * overWorkMult);
+            speed += overwork(R.index, "home");
+            speed += overwork(R.middle, "home");
+            speed += overwork(R.ring, "u2grip", moveblock * overWorkMult);
             speed += double;
-            rIndex = [speed, "uflick"];
-            rMiddle = [speed, "uflick"];
+            R.index.t = speed;
+            R.index.pos = "uflick";
+            R.middle.t = speed;
+            R.middle.pos = "uflick";
           } else if (lWrist == 0) {
-            speed += overwork(lIndex, "home");
-            speed += overwork(lMiddle, "home");
-            speed += overwork(lRing, "u2grip", moveblock * overWorkMult);
+            speed += overwork(L.index, "home");
+            speed += overwork(L.middle, "home");
+            speed += overwork(L.ring, "u2grip", moveblock * overWorkMult);
             speed += double;
-            lIndex = [speed, "uflick"];
-            lMiddle = [speed, "uflick"];
+            L.index.t = speed;
+            L.index.pos = "uflick";
+            L.middle.t = speed;
+            L.middle.pos = "uflick";
           } else {
             return [
               j,
               speed,
               lWrist,
               rWrist,
-              Math.max(lThumb[0], lIndex[0], lMiddle[0], lRing[0]),
-              Math.max(rThumb[0], rIndex[0], rMiddle[0], rRing[0]),
+              lastFingerTime(L),
+              lastFingerTime(R),
             ];
           }
           break;
@@ -243,30 +279,35 @@ export function algSpeed(
           if (
             lWrist == 0 &&
             (rWrist != 0 ||
-              Math.max(overwork(lRing, "home"), overwork(lMiddle, "home")) <=
-                Math.max(overwork(rRing, "dflick"), overwork(rMiddle, "home")))
+              Math.max(overwork(L.ring, "home"), overwork(L.middle, "home")) <=
+                Math.max(
+                  overwork(R.ring, "dflick"),
+                  overwork(R.middle, "home")
+                ))
           ) {
-            speed += overwork(lRing, "home");
-            speed += overwork(lMiddle, "home");
+            speed += overwork(L.ring, "home");
+            speed += overwork(L.middle, "home");
             if (prevMove[0] == "B") {
               speed += moveblock * 0.5 + ringMult;
             } else {
               speed += ringMult;
             }
-            lRing = [speed, "dflick"];
+            L.ring.t = speed;
+            L.ring.pos = "dflick";
           } else if (rWrist == 0 && prevMove[0] != "B") {
-            speed += overwork(rRing, "dflick");
-            speed += overwork(rMiddle, "home");
+            speed += overwork(R.ring, "dflick");
+            speed += overwork(R.middle, "home");
             speed += ringMult * pushMult;
-            rRing = [speed, "home"];
+            R.ring.t = speed;
+            R.ring.pos = "home";
           } else {
             return [
               j,
               speed,
               lWrist,
               rWrist,
-              Math.max(lThumb[0], lIndex[0], lMiddle[0], lRing[0]),
-              Math.max(rThumb[0], rIndex[0], rMiddle[0], rRing[0]),
+              lastFingerTime(L),
+              lastFingerTime(R),
             ];
           }
           break;
@@ -274,30 +315,35 @@ export function algSpeed(
           if (
             rWrist == 0 &&
             (lWrist != 0 ||
-              Math.max(overwork(rRing, "home"), overwork(rMiddle, "home")) <=
-                Math.max(overwork(lRing, "dflick"), overwork(lMiddle, "home")))
+              Math.max(overwork(R.ring, "home"), overwork(R.middle, "home")) <=
+                Math.max(
+                  overwork(L.ring, "dflick"),
+                  overwork(L.middle, "home")
+                ))
           ) {
-            speed += overwork(rRing, "home");
-            speed += overwork(rMiddle, "home");
+            speed += overwork(R.ring, "home");
+            speed += overwork(R.middle, "home");
             if (prevMove[0] == "B") {
               speed += moveblock * 0.5 + ringMult;
             } else {
               speed += ringMult;
             }
-            rRing = [speed, "dflick"];
+            R.ring.t = speed;
+            R.ring.pos = "dflick";
           } else if (lWrist == 0 && prevMove[0] != "B") {
-            speed += overwork(lRing, "dflick");
-            speed += overwork(lMiddle, "home");
+            speed += overwork(L.ring, "dflick");
+            speed += overwork(L.middle, "home");
             speed += ringMult * pushMult;
-            lRing = [speed, "home"];
+            L.ring.t = speed;
+            L.ring.pos = "home";
           } else {
             return [
               j,
               speed,
               lWrist,
               rWrist,
-              Math.max(lThumb[0], lIndex[0], lMiddle[0], lRing[0]),
-              Math.max(rThumb[0], rIndex[0], rMiddle[0], rRing[0]),
+              lastFingerTime(L),
+              lastFingerTime(R),
             ];
           }
           break;
@@ -305,180 +351,206 @@ export function algSpeed(
           if (
             rWrist == 0 &&
             (lWrist != 0 ||
-              Math.max(overwork(rMiddle, "home"), overwork(rRing, "home")) <=
-                Math.max(overwork(lMiddle, "home"), overwork(lRing, "home")))
+              Math.max(overwork(R.middle, "home"), overwork(R.ring, "home")) <=
+                Math.max(overwork(L.middle, "home"), overwork(L.ring, "home")))
           ) {
-            speed += overwork(rMiddle, "home");
-            speed += overwork(rRing, "home");
+            speed += overwork(R.middle, "home");
+            speed += overwork(R.ring, "home");
             if (prevMove[0] == "B") {
               speed += moveblock * 0.5 + double * ringMult;
             } else {
               speed += double * ringMult;
             }
-            rRing = [speed, "dflick"];
+            R.ring.t = speed;
+            R.ring.pos = "dflick";
           } else if (lWrist == 0) {
-            speed += overwork(lMiddle, "home");
-            speed += overwork(lRing, "home");
+            speed += overwork(L.middle, "home");
+            speed += overwork(L.ring, "home");
             if (prevMove[0] == "B") {
               speed += moveblock * 0.5 + double * ringMult;
             } else {
               speed += double * ringMult;
             }
-            lRing = [speed, "dflick"];
+            L.ring.t = speed;
+            L.ring.pos = "dflick";
           } else {
             return [
               j,
               speed,
               lWrist,
               rWrist,
-              Math.max(lThumb[0], lIndex[0], lMiddle[0], lRing[0]),
-              Math.max(rThumb[0], rIndex[0], rMiddle[0], rRing[0]),
+              lastFingerTime(L),
+              lastFingerTime(R),
             ];
           }
           break;
         case "F":
           if (rWrist == -1) {
-            speed += overwork(rIndex, "home");
+            speed += overwork(R.index, "home");
             speed += 1;
-            rIndex = [speed, "uflick"];
+            R.index.t = speed;
+            R.index.pos = "uflick";
           } else if (lWrist == 1 && move != "f") {
-            speed += overwork(lRing, "home");
+            speed += overwork(L.ring, "home");
             if (prevMove[0] == "D") {
               speed += moveblock * 0.5 + ringMult;
             } else {
               speed += 1;
             }
-            lRing = [speed, "dflick"];
+            L.ring.t = speed;
+            L.ring.pos = "dflick";
           } else if (rWrist == 1 && prevMove[0] != "D" && move != "f") {
-            speed += overwork(rRing, "dflick");
+            speed += overwork(R.ring, "dflick");
             speed += ringMult * pushMult;
-            rRing = [speed, "home"];
+            R.ring.t = speed;
+            R.ring.pos = "home";
           } else if (
             lWrist == -1 &&
             rWrist == 0 &&
-            overwork(rIndex, "uflick") == 0
+            overwork(R.index, "uflick") == 0
           ) {
             speed += 1;
-            rIndex = [speed, "fflick"];
+            R.index.t = speed;
+            R.index.pos = "fflick";
           } else if (
             lWrist == -1 &&
-            overwork(lIndex, "uflick") == 0 &&
+            overwork(L.index, "uflick") == 0 &&
             prevMove[0] != "U"
           ) {
             speed += pushMult;
-            lIndex = [speed, "home"];
+            L.index.t = speed;
+            L.index.pos = "home";
           } else if (lWrist == -1 && grip == -1) {
-            speed += overwork(lThumb, "top", 0.9 * overWorkMult);
-            speed += overwork(lIndex, "top");
+            speed += overwork(L.thumb, "top", 0.9 * overWorkMult);
+            speed += overwork(L.index, "top");
             if (prevMove[0] == "D") {
               speed += 1.8;
             } else {
               speed += 1;
             }
             lWrist++;
-            lThumb = [speed, "leftu"];
-            lIndex = [speed, "top"];
+            L.thumb.t = speed;
+            L.thumb.pos = "leftu";
+            L.index.t = speed;
+            L.index.pos = "top";
           } else if (lWrist == 0 && grip == -1) {
-            speed += overwork(lThumb, "bottom");
-            speed += overwork(lIndex, "top");
+            speed += overwork(L.thumb, "bottom");
+            speed += overwork(L.index, "top");
             if (prevMove[0] == "D") {
               speed += 2.05;
             } else {
               speed += 1.25;
             }
-            lThumb = [speed, "top"];
-            lIndex = [speed, "top"];
+            L.thumb.t = speed;
+            L.thumb.pos = "top";
+            L.index.t = speed;
+            L.index.pos = "top";
           } else if (rWrist == 0 && lWrist == 0 && move == "f") {
-            speed += overwork(rIndex, "uflick");
-            speed += overwork(rMiddle, "home");
+            speed += overwork(R.index, "uflick");
+            speed += overwork(R.middle, "home");
             speed += 1;
-            rIndex = [speed, "fflick"];
+            R.index.t = speed;
+            R.index.pos = "fflick";
           } else if (j == 0 && rWrist == 0 && lWrist == 0) {
-            speed += overwork(rThumb, "top");
+            speed += overwork(R.thumb, "top");
             speed += 1;
-            rThumb = [speed, "rdown"];
-            rMiddle = [speed, "uflick"];
+            R.thumb.t = speed;
+            R.thumb.pos = "rdown";
+            R.middle.t = speed;
+            R.middle.pos = "uflick";
           } else {
             return [
               j,
               speed,
               lWrist,
               rWrist,
-              Math.max(lThumb[0], lIndex[0], lMiddle[0], lRing[0]),
-              Math.max(rThumb[0], rIndex[0], rMiddle[0], rRing[0]),
+              lastFingerTime(L),
+              lastFingerTime(R),
             ];
           }
           break;
         case "F'":
           if (lWrist == -1) {
-            speed += overwork(lIndex, "home");
+            speed += overwork(L.index, "home");
             speed += 1;
-            lIndex = [speed, "uflick"];
+            L.index.t = speed;
+            L.index.pos = "uflick";
           } else if (rWrist == 1 && move != "f") {
-            speed += overwork(rRing, "home");
+            speed += overwork(R.ring, "home");
             if (prevMove[0] == "D") {
               speed += moveblock * 0.5 + ringMult;
             } else {
               speed += 1;
             }
-            rRing = [speed, "dflick"];
+            R.ring.t = speed;
+            R.ring.pos = "dflick";
           } else if (lWrist == 1 && prevMove[0] != "D" && move != "f") {
-            speed += overwork(lRing, "dflick");
+            speed += overwork(L.ring, "dflick");
             speed += ringMult * pushMult;
-            lRing = [speed, "home"];
+            L.ring.t = speed;
+            L.ring.pos = "home";
           } else if (
             rWrist == -1 &&
             lWrist == 0 &&
-            overwork(lIndex, "uflick") == 0
+            overwork(L.index, "uflick") == 0
           ) {
             speed += 1;
-            lIndex = [speed, "fflick"];
+            L.index.t = speed;
+            L.index.pos = "fflick";
           } else if (
             rWrist == -1 &&
-            overwork(rIndex, "uflick") == 0 &&
+            overwork(R.index, "uflick") == 0 &&
             prevMove[0] != "U"
           ) {
             speed += pushMult;
-            rIndex = [speed, "home"];
+            R.index.t = speed;
+            R.index.pos = "home";
           } else if (rWrist == -1 && grip == 1) {
-            speed += overwork(rThumb, "top", 0.9 * overWorkMult);
-            speed += overwork(rIndex, "top");
+            speed += overwork(R.thumb, "top", 0.9 * overWorkMult);
+            speed += overwork(R.index, "top");
             if (prevMove[0] == "D") {
               speed += 1.8;
             } else {
               speed += 1;
             }
             rWrist++;
-            rThumb = [speed, "rightu"];
-            rIndex = [speed, "top"];
+            R.thumb.t = speed;
+            R.thumb.pos = "rightu";
+            R.index.t = speed;
+            R.index.pos = "top";
           } else if (rWrist == 0 && grip == 1) {
-            speed += overwork(rThumb, "bottom");
-            speed += overwork(rIndex, "top");
+            speed += overwork(R.thumb, "bottom");
+            speed += overwork(R.index, "top");
             if (prevMove[0] == "D") {
               speed += 2.05;
             } else {
               speed += 1.25;
             }
-            rThumb = [speed, "top"];
-            rIndex = [speed, "top"];
+            R.thumb.t = speed;
+            R.thumb.pos = "top";
+            R.index.t = speed;
+            R.index.pos = "top";
           } else if (lWrist == 0 && rWrist == 0 && move == "f'") {
-            speed += overwork(lIndex, "uflick");
-            speed += overwork(lMiddle, "home");
+            speed += overwork(L.index, "uflick");
+            speed += overwork(L.middle, "home");
             speed += 1;
-            lIndex = [speed, "fflick"];
+            L.index.t = speed;
+            L.index.pos = "fflick";
           } else if (j == 0 && rWrist == 0 && lWrist == 0) {
-            speed += overwork(lThumb, "top");
+            speed += overwork(L.thumb, "top");
             speed += 1;
-            lThumb = [speed, "rdown"];
-            lMiddle = [speed, "uflick"];
+            L.thumb.t = speed;
+            L.thumb.pos = "rdown";
+            L.middle.t = speed;
+            L.middle.pos = "uflick";
           } else {
             return [
               j,
               speed,
               lWrist,
               rWrist,
-              Math.max(lThumb[0], lIndex[0], lMiddle[0], lRing[0]),
-              Math.max(rThumb[0], rIndex[0], rMiddle[0], rRing[0]),
+              lastFingerTime(L),
+              lastFingerTime(R),
             ];
           }
           break;
@@ -487,60 +559,66 @@ export function algSpeed(
             rWrist == -1 &&
             (lWrist != -1 ||
               Math.max(
-                overwork(rIndex, "home"),
-                overwork(rMiddle, "home"),
-                overwork(rRing, "u2grip")
+                overwork(R.index, "home"),
+                overwork(R.middle, "home"),
+                overwork(R.ring, "u2grip")
               ) <=
                 Math.max(
-                  overwork(lIndex, "home"),
-                  overwork(lMiddle, "home"),
-                  overwork(lRing, "u2grip")
+                  overwork(L.index, "home"),
+                  overwork(L.middle, "home"),
+                  overwork(L.ring, "u2grip")
                 ))
           ) {
-            speed += overwork(rIndex, "home");
-            speed += overwork(rMiddle, "home");
-            speed += overwork(rRing, "u2grip");
+            speed += overwork(R.index, "home");
+            speed += overwork(R.middle, "home");
+            speed += overwork(R.ring, "u2grip");
             speed += double;
-            rIndex = [speed, "uflick"];
-            rMiddle = [speed, "uflick"];
+            R.index.t = speed;
+            R.index.pos = "uflick";
+            R.middle.t = speed;
+            R.middle.pos = "uflick";
           } else if (lWrist == -1) {
-            speed += overwork(lIndex, "home");
-            speed += overwork(lMiddle, "home");
-            speed += overwork(lRing, "u2grip");
+            speed += overwork(L.index, "home");
+            speed += overwork(L.middle, "home");
+            speed += overwork(L.ring, "u2grip");
             speed += double;
-            lIndex = [speed, "uflick"];
-            lMiddle = [speed, "uflick"];
+            L.index.t = speed;
+            L.index.pos = "uflick";
+            L.middle.t = speed;
+            L.middle.pos = "uflick";
           } else if (
             rWrist == 1 &&
             (lWrist != 1 ||
-              Math.max(overwork(rMiddle, "home"), overwork(rRing, "home")) <=
-                Math.max(overwork(lMiddle, "home"), overwork(lRing, "home")))
+              Math.max(overwork(R.middle, "home"), overwork(R.ring, "home")) <=
+                Math.max(overwork(L.middle, "home"), overwork(L.ring, "home")))
           ) {
-            speed += overwork(rMiddle, "home");
-            speed += overwork(rRing, "home");
+            speed += overwork(R.middle, "home");
+            speed += overwork(R.ring, "home");
             if (prevMove[0] == "D") {
               speed += double * ringMult + moveblock * 0.5;
             } else {
               speed += double * ringMult;
             }
-            rRing = [speed, "dflick"];
+            R.ring.t = speed;
+            R.ring.pos = "dflick";
           } else if (lWrist == 1) {
-            speed += overwork(lMiddle, "home");
-            speed += overwork(lRing, "home");
+            speed += overwork(L.middle, "home");
+            speed += overwork(L.ring, "home");
             if (prevMove[0] == "D") {
               speed += double * ringMult + moveblock * 0.5;
             } else {
               speed += double * ringMult;
             }
-            lRing = [speed, "dflick"];
+            L.ring.t = speed;
+            L.ring.pos = "dflick";
           } else {
             return [
               j,
               speed,
               lWrist,
               rWrist,
-              Math.max(lThumb[0], lIndex[0], lMiddle[0], lRing[0]),
-              Math.max(rThumb[0], rIndex[0], rMiddle[0], rRing[0]),
+              lastFingerTime(L),
+              lastFingerTime(R),
             ];
           }
           break;
@@ -555,8 +633,8 @@ export function algSpeed(
               speed,
               lWrist - 1,
               rWrist,
-              Math.max(lThumb[0], lIndex[0], lMiddle[0], lRing[0]),
-              Math.max(rThumb[0], rIndex[0], rMiddle[0], rRing[0]),
+              lastFingerTime(L),
+              lastFingerTime(R),
             ];
           }
           speed += wristMult;
@@ -570,8 +648,8 @@ export function algSpeed(
               speed,
               lWrist + 1,
               rWrist,
-              Math.max(lThumb[0], lIndex[0], lMiddle[0], lRing[0]),
-              Math.max(rThumb[0], rIndex[0], rMiddle[0], rRing[0]),
+              lastFingerTime(L),
+              lastFingerTime(R),
             ];
           }
           speed += wristMult;
@@ -587,105 +665,115 @@ export function algSpeed(
               speed,
               lWrist > 0 ? lWrist - 2 : lWrist + 2,
               rWrist,
-              Math.max(lThumb[0], lIndex[0], lMiddle[0], lRing[0]),
-              Math.max(rThumb[0], rIndex[0], rMiddle[0], rRing[0]),
+              lastFingerTime(L),
+              lastFingerTime(R),
             ];
           }
           speed += double * wristMult;
           break;
         case "B":
           if (rWrist == 1) {
-            speed += overwork(rIndex, "home");
-            speed++;
-            rIndex = [speed, "uflick"];
+            speed += overwork(R.index, "home");
+            speed += 1;
+            R.index.t = speed;
+            R.index.pos = "uflick";
           } else if (lWrist == -1) {
-            speed += overwork(lRing, "home");
-            speed += overwork(lMiddle, "home");
+            speed += overwork(L.ring, "home");
+            speed += overwork(L.middle, "home");
             if (prevMove[0] == "U") {
               speed += moveblock * 0.5 + ringMult;
             } else {
               speed += ringMult;
             }
-            lRing = [speed, "dflick"];
+            L.ring.t = speed;
+            L.ring.pos = "dflick";
           } else if (lWrist == 1 && prevMove[0] != "U" && prevMove[0] != "D") {
-            if (lIndex[1] == "uflick") {
-              speed += overwork(lIndex, "eido", 0.75 * overWorkMult);
-              speed = Math.max(speed, lOhCool + 2.5);
+            if (L.index.pos == "uflick") {
+              speed += overwork(L.index, "eido", 0.75 * overWorkMult);
+              speed = Math.max(speed, L.ohCool + 2.5);
             } else {
-              speed += overwork(lIndex, "eido", 1.25 * overWorkMult);
+              speed += overwork(L.index, "eido", 1.25 * overWorkMult);
             }
             speed += 1.15 * pushMult;
-            lIndex = [speed, "uflick"];
-            lOhCool = speed;
+            L.index.t = speed;
+            L.index.pos = "uflick";
+            L.ohCool = speed;
           } else if (lWrist == 0 && (rWrist == 1 || rWrist == -1)) {
-            speed += overwork(lIndex, "top", 0.9 * overWorkMult);
+            speed += overwork(L.index, "top", 0.9 * overWorkMult);
             if (prevMove[0] == "U") {
               speed += 1.45;
             } else {
               speed += 1;
             }
-            lIndex = [speed, "leftdb"];
+            L.index.t = speed;
+            L.index.pos = "leftdb";
           } else if (rWrist == -1 && prevMove[0] != "U") {
-            speed += overwork(rRing, "dflick");
-            speed += overwork(rMiddle, "home");
+            speed += overwork(R.ring, "dflick");
+            speed += overwork(R.middle, "home");
             speed += ringMult * pushMult;
-            rRing = [speed, "home"];
+            R.ring.t = speed;
+            R.ring.pos = "home";
           } else {
             return [
               j,
               speed,
               lWrist,
               rWrist,
-              Math.max(lThumb[0], lIndex[0], lMiddle[0], lRing[0]),
-              Math.max(rThumb[0], rIndex[0], rMiddle[0], rRing[0]),
+              lastFingerTime(L),
+              lastFingerTime(R),
             ];
           }
           break;
         case "B'":
           if (lWrist == 1) {
-            speed += overwork(lIndex, "home");
-            speed++;
-            lIndex = [speed, "uflick"];
+            speed += overwork(L.index, "home");
+            speed += 1;
+            L.index.t = speed;
+            L.index.pos = "uflick";
           } else if (rWrist == -1) {
-            speed += overwork(rRing, "home");
-            speed += overwork(rMiddle, "home");
+            speed += overwork(R.ring, "home");
+            speed += overwork(R.middle, "home");
             if (prevMove[0] == "U") {
               speed += moveblock * 0.5 + ringMult;
             } else {
               speed += ringMult;
             }
-            rRing = [speed, "dflick"];
+            R.ring.t = speed;
+            R.ring.pos = "dflick";
           } else if (rWrist == 1 && prevMove[0] != "U" && prevMove[0] != "D") {
-            if (rIndex[1] == "uflick") {
-              speed += overwork(rIndex, "eido", 0.75 * overWorkMult);
-              speed = Math.max(speed, rOhCool + 2.5);
+            if (R.index.pos == "uflick") {
+              speed += overwork(R.index, "eido", 0.75 * overWorkMult);
+              speed = Math.max(speed, R.ohCool + 2.5);
             } else {
-              speed += overwork(rIndex, "eido", 1.25 * overWorkMult);
+              speed += overwork(R.index, "eido", 1.25 * overWorkMult);
             }
             speed += 1.15 * pushMult;
-            rIndex = [speed, "uflick"];
-            rOhCool = speed;
+            R.index.t = speed;
+            R.index.pos = "uflick";
+            R.ohCool = speed;
           } else if (rWrist == 0 && (lWrist == 1 || lWrist == -1)) {
-            speed += overwork(rIndex, "top", 0.9 * overWorkMult);
+            speed += overwork(R.index, "top", 0.9 * overWorkMult);
             if (prevMove[0] == "U") {
               speed += 1.45;
             } else {
               speed += 1;
             }
-            rIndex = [speed, "rightdb"];
+            R.index.t = speed;
+            R.index.pos = "rightdb";
           } else if (lWrist == -1 && prevMove[0] != "U") {
-            speed += overwork(lRing, "dflick");
-            speed += overwork(lMiddle, "home");
+            speed += overwork(L.ring, "dflick");
+            speed += overwork(L.middle, "home");
             speed += ringMult * pushMult;
-            lRing = [speed, "home"];
+            L.ring.t = speed;
+            L.ring.pos = "home";
           } else {
             return [
               j,
               speed,
               lWrist,
               rWrist,
-              Math.max(lThumb[0], lIndex[0], lMiddle[0], lRing[0]),
-              Math.max(rThumb[0], rIndex[0], rMiddle[0], rRing[0]),
+              lastFingerTime(L),
+              lastFingerTime(R),
             ];
           }
           break;
@@ -694,60 +782,66 @@ export function algSpeed(
             rWrist == 1 &&
             (lWrist != 1 ||
               Math.max(
-                overwork(rIndex, "home"),
-                overwork(rMiddle, "home"),
-                overwork(rRing, "u2grip")
+                overwork(R.index, "home"),
+                overwork(R.middle, "home"),
+                overwork(R.ring, "u2grip")
               ) <=
                 Math.max(
-                  overwork(lIndex, "home"),
-                  overwork(lMiddle, "home"),
-                  overwork(lRing, "u2grip")
+                  overwork(L.index, "home"),
+                  overwork(L.middle, "home"),
+                  overwork(L.ring, "u2grip")
                 ))
           ) {
-            speed += overwork(rIndex, "home");
-            speed += overwork(rMiddle, "home");
-            speed += overwork(rRing, "u2grip");
+            speed += overwork(R.index, "home");
+            speed += overwork(R.middle, "home");
+            speed += overwork(R.ring, "u2grip");
             speed += double;
-            rIndex = [speed, "uflick"];
-            rMiddle = [speed, "uflick"];
+            R.index.t = speed;
+            R.index.pos = "uflick";
+            R.middle.t = speed;
+            R.middle.pos = "uflick";
           } else if (lWrist == 1) {
-            speed += overwork(lIndex, "home");
-            speed += overwork(lMiddle, "home");
-            speed += overwork(lRing, "u2grip");
+            speed += overwork(L.index, "home");
+            speed += overwork(L.middle, "home");
+            speed += overwork(L.ring, "u2grip");
             speed += double;
-            lIndex = [speed, "uflick"];
-            lMiddle = [speed, "uflick"];
+            L.index.t = speed;
+            L.index.pos = "uflick";
+            L.middle.t = speed;
+            L.middle.pos = "uflick";
           } else if (
             lWrist == -1 &&
             (rWrist != -1 ||
-              Math.max(overwork(rMiddle, "home"), overwork(rRing, "home")) >
-                Math.max(overwork(lMiddle, "home"), overwork(lRing, "home")))
+              Math.max(overwork(R.middle, "home"), overwork(R.ring, "home")) >
+                Math.max(overwork(L.middle, "home"), overwork(L.ring, "home")))
           ) {
-            speed += overwork(lMiddle, "home");
-            speed += overwork(lRing, "home");
+            speed += overwork(L.middle, "home");
+            speed += overwork(L.ring, "home");
             if (prevMove[0] == "U") {
               speed += moveblock * 0.5 + double * ringMult;
             } else {
               speed += double * ringMult;
             }
-            lRing = [speed, "dflick"];
+            L.ring.t = speed;
+            L.ring.pos = "dflick";
           } else if (rWrist == -1) {
-            speed += overwork(rMiddle, "home");
-            speed += overwork(rRing, "home");
+            speed += overwork(R.middle, "home");
+            speed += overwork(R.ring, "home");
             if (prevMove[0] == "U") {
               speed += moveblock * 0.5 + double * ringMult;
             } else {
               speed += double * ringMult;
             }
-            rRing = [speed, "dflick"];
+            R.ring.t = speed;
+            R.ring.pos = "dflick";
           } else {
             return [
               j,
               speed,
               lWrist,
               rWrist,
-              Math.max(lThumb[0], lIndex[0], lMiddle[0], lRing[0]),
-              Math.max(rThumb[0], rIndex[0], rMiddle[0], rRing[0]),
+              lastFingerTime(L),
+              lastFingerTime(R),
             ];
           }
           break;
@@ -755,39 +849,43 @@ export function algSpeed(
           if (
             rWrist == 0 &&
             (lWrist != 0 ||
-              overwork(rIndex, "top", 1.25 * overWorkMult) <=
+              overwork(R.index, "top", 1.25 * overWorkMult) <=
                 (moveblock * 0.5 + pushMult - 1) * sesliceMult)
           ) {
-            speed += overwork(rIndex, "top", 1.25 * overWorkMult);
+            speed += overwork(R.index, "top", 1.25 * overWorkMult);
             speed += sesliceMult;
-            rIndex = [speed, "sflick"];
+            R.index.t = speed;
+            R.index.pos = "sflick";
           } else if (lWrist == 0 && rWrist == -1) {
-            speed += overwork(rIndex, "home", 1.25 * overWorkMult);
-            speed += overwork(rThumb, "top", 1.25 * overWorkMult);
-            speed += overwork(rMiddle, "home", 1.25 * overWorkMult);
+            speed += overwork(R.index, "home", 1.25 * overWorkMult);
+            speed += overwork(R.thumb, "top", 1.25 * overWorkMult);
+            speed += overwork(R.middle, "home", 1.25 * overWorkMult);
             speed += sesliceMult;
-            rThumb = [speed, "top"];
-            rMiddle = [speed, "eflick"];
+            R.thumb.t = speed;
+            R.thumb.pos = "top";
+            R.middle.t = speed;
+            R.middle.pos = "eflick";
           } else if (
             lWrist == 0 &&
             (rWrist == 0 ||
               (rWrist == 1 && (prevMove == "R" || prevMove == "L")))
           ) {
-            speed += overwork(lIndex, "uflick", 1.25 * overWorkMult);
+            speed += overwork(L.index, "uflick", 1.25 * overWorkMult);
             if (prevMove[0] == "U") {
               speed += moveblock * 0.5 + pushMult * sesliceMult;
             } else {
               speed += pushMult * sesliceMult;
             }
-            lIndex = [speed, "top"];
+            L.index.t = speed;
+            L.index.pos = "top";
           } else {
             return [
               j,
               speed,
               lWrist,
               rWrist,
-              Math.max(lThumb[0], lIndex[0], lMiddle[0], lRing[0]),
-              Math.max(rThumb[0], rIndex[0], rMiddle[0], rRing[0]),
+              lastFingerTime(L),
+              lastFingerTime(R),
             ];
           }
           break;
@@ -795,215 +893,243 @@ export function algSpeed(
           if (
             lWrist == 0 &&
             (rWrist != 0 ||
-              overwork(lIndex, "top", 1.25 * overWorkMult) <=
+              overwork(L.index, "top", 1.25 * overWorkMult) <=
                 (moveblock * 0.5 + pushMult - 1) * sesliceMult)
           ) {
-            speed += overwork(lIndex, "top", 1.25 * overWorkMult);
+            speed += overwork(L.index, "top", 1.25 * overWorkMult);
             speed += sesliceMult;
-            lIndex = [speed, "sflick"];
+            L.index.t = speed;
+            L.index.pos = "sflick";
           } else if (rWrist == 0 && lWrist == -1) {
-            speed += overwork(lIndex, "home", 1.25 * overWorkMult);
-            speed += overwork(lThumb, "bottom", 1.25 * overWorkMult);
-            speed += overwork(lMiddle, "home", 1.25 * overWorkMult);
+            speed += overwork(L.index, "home", 1.25 * overWorkMult);
+            speed += overwork(L.thumb, "bottom", 1.25 * overWorkMult);
+            speed += overwork(L.middle, "home", 1.25 * overWorkMult);
             speed += sesliceMult;
-            lThumb = [speed, "top"];
-            lMiddle = [speed, "eflick"];
+            L.thumb.t = speed;
+            L.thumb.pos = "top";
+            L.middle.t = speed;
+            L.middle.pos = "eflick";
           } else if (
             rWrist == 0 &&
             (lWrist == 0 ||
               (lWrist == 1 && (prevMove == "R" || prevMove == "L")))
           ) {
-            speed += overwork(rIndex, "uflick", 1.25 * overWorkMult);
+            speed += overwork(R.index, "uflick", 1.25 * overWorkMult);
             if (prevMove[0] == "U") {
               speed += moveblock * 0.5 + pushMult * sesliceMult;
             } else {
               speed += pushMult * sesliceMult;
             }
-            rIndex = [speed, "top"];
+            R.index.t = speed;
+            R.index.pos = "top";
           } else {
             return [
               j,
               speed,
               lWrist,
               rWrist,
-              Math.max(lThumb[0], lIndex[0], lMiddle[0], lRing[0]),
-              Math.max(rThumb[0], rIndex[0], rMiddle[0], rRing[0]),
+              lastFingerTime(L),
+              lastFingerTime(R),
             ];
           }
           break;
         case "S2":
           if ((rWrist == -1 || rWrist == 1) && lWrist == 0) {
-            speed += overwork(rThumb, "home");
-            speed += overwork(rIndex, "home");
-            speed += overwork(rMiddle, "home");
-            speed += overwork(rRing, "u2grip");
+            speed += overwork(R.thumb, "home");
+            speed += overwork(R.index, "home");
+            speed += overwork(R.middle, "home");
+            speed += overwork(R.ring, "u2grip");
             speed += sesliceMult * double;
-            rMiddle = [speed, "e"];
-            rIndex = [speed, "e"];
+            R.middle.t = speed;
+            R.middle.pos = "e";
+            R.index.t = speed;
+            R.index.pos = "e";
           } else if ((lWrist == -1 || lWrist == 1) && rWrist == 0) {
-            speed += overwork(lThumb, "home");
-            speed += overwork(lIndex, "home");
-            speed += overwork(lMiddle, "home");
-            speed += overwork(lRing, "u2grip");
+            speed += overwork(L.thumb, "home");
+            speed += overwork(L.index, "home");
+            speed += overwork(L.middle, "home");
+            speed += overwork(L.ring, "u2grip");
             speed += sesliceMult * double;
-            rMiddle = [speed, "e"];
-            rIndex = [speed, "e"];
+            L.middle.t = speed;
+            L.middle.pos = "e";
+            L.index.t = speed;
+            L.index.pos = "e";
           } else {
             return [
               j,
               speed,
               lWrist,
               rWrist,
-              Math.max(lThumb[0], lIndex[0], lMiddle[0], lRing[0]),
-              Math.max(rThumb[0], rIndex[0], rMiddle[0], rRing[0]),
+              lastFingerTime(L),
+              lastFingerTime(R),
             ];
           }
           break;
         case "E":
           if ((rWrist == 1 || rWrist == -1) && lWrist == 0) {
-            speed += overwork(lIndex, "home");
+            speed += overwork(L.index, "home");
             speed += sesliceMult;
-            lIndex = [speed, "e"];
+            L.index.t = speed;
+            L.index.pos = "e";
           } else if (
             (lWrist == 1 || lWrist == -1) &&
             rWrist == 0 &&
             prevMove[0] != "B"
           ) {
-            speed += overwork(rIndex, "e");
+            speed += overwork(R.index, "e");
             speed += sesliceMult * pushMult;
-            rIndex = [speed, "home"];
+            R.index.t = speed;
+            R.index.pos = "home";
           } else {
             return [
               j,
               speed,
               lWrist,
               rWrist,
-              Math.max(lThumb[0], lIndex[0], lMiddle[0], lRing[0]),
-              Math.max(rThumb[0], rIndex[0], rMiddle[0], rRing[0]),
+              lastFingerTime(L),
+              lastFingerTime(R),
             ];
           }
           break;
         case "E'":
           if ((lWrist == 1 || lWrist == -1) && rWrist == 0) {
-            speed += overwork(rIndex, "home");
+            speed += overwork(R.index, "home");
             speed += sesliceMult;
-            rIndex = [speed, "e"];
+            R.index.t = speed;
+            R.index.pos = "e";
           } else if (
             (rWrist == 1 || rWrist == -1) &&
             lWrist == 0 &&
             prevMove[0] != "B"
           ) {
-            speed += overwork(lIndex, "e");
+            speed += overwork(L.index, "e");
             speed += sesliceMult * pushMult;
-            lIndex = [speed, "home"];
+            L.index.t = speed;
+            L.index.pos = "home";
           } else {
             return [
               j,
               speed,
               lWrist,
               rWrist,
-              Math.max(lThumb[0], lIndex[0], lMiddle[0], lRing[0]),
-              Math.max(rThumb[0], rIndex[0], rMiddle[0], rRing[0]),
+              lastFingerTime(L),
+              lastFingerTime(R),
             ];
           }
           break;
         case "E2":
           if ((lWrist == 1 || lWrist == -1) && rWrist == 0) {
-            speed += overwork(rIndex, "home");
-            speed += overwork(rMiddle, "home");
-            speed += overwork(rRing, "u2grip");
+            speed += overwork(R.index, "home");
+            speed += overwork(R.middle, "home");
+            speed += overwork(R.ring, "u2grip");
             speed += sesliceMult * double;
-            rIndex = [speed, "e"];
-            rMiddle = [speed, "e"];
+            R.index.t = speed;
+            R.index.pos = "e";
+            R.middle.t = speed;
+            R.middle.pos = "e";
           } else if ((rWrist == 1 || rWrist == -1) && lWrist == 0) {
-            speed += overwork(lIndex, "home");
-            speed += overwork(lMiddle, "home");
-            speed += overwork(lRing, "u2grip");
+            speed += overwork(L.index, "home");
+            speed += overwork(L.middle, "home");
+            speed += overwork(L.ring, "u2grip");
             speed += sesliceMult * double;
-            lIndex = [speed, "e"];
-            lMiddle = [speed, "e"];
+            L.index.t = speed;
+            L.index.pos = "e";
+            L.middle.t = speed;
+            L.middle.pos = "e";
           } else {
             return [
               j,
               speed,
               lWrist,
               rWrist,
-              Math.max(lThumb[0], lIndex[0], lMiddle[0], lRing[0]),
-              Math.max(rThumb[0], rIndex[0], rMiddle[0], rRing[0]),
+              lastFingerTime(L),
+              lastFingerTime(R),
             ];
           }
           break;
         case "M'":
           if (lWrist == 0) {
-            speed += overwork(lThumb, "home");
-            speed += overwork(lIndex, "m");
-            speed += overwork(lMiddle, "m");
-            speed += overwork(lRing, "m");
+            speed += overwork(L.thumb, "home");
+            speed += overwork(L.index, "m");
+            speed += overwork(L.middle, "m");
+            speed += overwork(L.ring, "m");
             if (prevMove[0] == "B") {
               speed += 1.8;
             } else {
               speed += 1;
             }
-            lThumb = [speed, "home"];
-            lIndex = [speed, "m"];
-            lMiddle = [speed, "mflick"];
-            lRing = [speed, "m"];
+            L.thumb.t = speed;
+            L.thumb.pos = "home";
+            L.index.t = speed;
+            L.index.pos = "m";
+            L.middle.t = speed;
+            L.middle.pos = "mflick";
+            L.ring.t = speed;
+            L.ring.pos = "m";
           } else {
             return [
               j,
               speed,
               lWrist,
               rWrist,
-              Math.max(lThumb[0], lIndex[0], lMiddle[0], lRing[0]),
-              Math.max(rThumb[0], rIndex[0], rMiddle[0], rRing[0]),
+              lastFingerTime(L),
+              lastFingerTime(R),
             ];
           }
           break;
         case "M":
           if (lWrist == 0 && prevMove[0] != "B") {
-            speed += overwork(lThumb, "home");
-            speed += overwork(lIndex, "m");
-            speed += overwork(lMiddle, "mflick", 1.25 * overWorkMult);
-            speed += overwork(lRing, "m");
+            speed += overwork(L.thumb, "home");
+            speed += overwork(L.index, "m");
+            speed += overwork(L.middle, "mflick", 1.25 * overWorkMult);
+            speed += overwork(L.ring, "m");
             speed += pushMult;
-            lThumb = [speed, "home"];
-            lIndex = [speed, "m"];
-            lMiddle = [speed, "m"];
-            lRing = [speed, "m"];
+            L.thumb.t = speed;
+            L.thumb.pos = "home";
+            L.index.t = speed;
+            L.index.pos = "m";
+            L.middle.t = speed;
+            L.middle.pos = "m";
+            L.ring.t = speed;
+            L.ring.pos = "m";
           } else {
             return [
               j,
               speed,
               lWrist,
               rWrist,
-              Math.max(lThumb[0], lIndex[0], lMiddle[0], lRing[0]),
-              Math.max(rThumb[0], rIndex[0], rMiddle[0], rRing[0]),
+              lastFingerTime(L),
+              lastFingerTime(R),
             ];
           }
           break;
         case "M2":
           if (lWrist == 0) {
-            speed += overwork(lThumb, "home");
-            speed += overwork(lIndex, "m");
-            speed += overwork(lMiddle, "m");
-            speed += overwork(lRing, "m");
+            speed += overwork(L.thumb, "home");
+            speed += overwork(L.index, "m");
+            speed += overwork(L.middle, "m");
+            speed += overwork(L.ring, "m");
             if (prevMove[0] == "B") {
               speed += moveblock + double;
             } else {
               speed += double;
             }
-            lThumb = [speed, "home"];
-            lIndex = [speed, "m"];
-            lMiddle = [speed, "mflick"];
-            lRing = [speed, "m"];
+            L.thumb.t = speed;
+            L.thumb.pos = "home";
+            L.index.t = speed;
+            L.index.pos = "m";
+            L.middle.t = speed;
+            L.middle.pos = "mflick";
+            L.ring.t = speed;
+            L.ring.pos = "m";
           } else {
             return [
               j,
               speed,
               lWrist,
               rWrist,
-              Math.max(lThumb[0], lIndex[0], lMiddle[0], lRing[0]),
-              Math.max(rThumb[0], rIndex[0], rMiddle[0], rRing[0]),
+              lastFingerTime(L),
+              lastFingerTime(R),
             ];
           }
           break;
@@ -1016,8 +1142,8 @@ export function algSpeed(
               speed,
               lWrist,
               rWrist,
-              Math.max(lThumb[0], lIndex[0], lMiddle[0], lRing[0]),
-              Math.max(rThumb[0], rIndex[0], rMiddle[0], rRing[0]),
+              lastFingerTime(L),
+              lastFingerTime(R),
             ];
           }
           break;
@@ -1030,8 +1156,8 @@ export function algSpeed(
               speed,
               lWrist,
               rWrist,
-              Math.max(lThumb[0], lIndex[0], lMiddle[0], lRing[0]),
-              Math.max(rThumb[0], rIndex[0], rMiddle[0], rRing[0]),
+              lastFingerTime(L),
+              lastFingerTime(R),
             ];
           }
           break;
@@ -1048,8 +1174,8 @@ export function algSpeed(
               speed,
               lWrist - 2,
               rWrist - 2,
-              Math.max(lThumb[0], lIndex[0], lMiddle[0], lRing[0]),
-              Math.max(rThumb[0], rIndex[0], rMiddle[0], rRing[0]),
+              lastFingerTime(L),
+              lastFingerTime(R),
             ];
           } else {
             return [
@@ -1057,8 +1183,8 @@ export function algSpeed(
               speed,
               lWrist + 2,
               rWrist + 2,
-              Math.max(lThumb[0], lIndex[0], lMiddle[0], lRing[0]),
-              Math.max(rThumb[0], rIndex[0], rMiddle[0], rRing[0]),
+              lastFingerTime(L),
+              lastFingerTime(R),
             ];
           }
           break;
@@ -1067,26 +1193,12 @@ export function algSpeed(
         case "Z":
         case "Z'":
           speed += rotation;
-          return [
-            j + 1,
-            speed,
-            0,
-            0,
-            Math.max(lThumb[0], lIndex[0], lMiddle[0], lRing[0]),
-            Math.max(rThumb[0], rIndex[0], rMiddle[0], rRing[0]),
-          ];
+          return [j + 1, speed, 0, 0, lastFingerTime(L), lastFingerTime(R)];
           break;
         case "Y2":
         case "Z2":
           speed += rotation * double;
-          return [
-            j + 1,
-            speed,
-            0,
-            0,
-            Math.max(lThumb[0], lIndex[0], lMiddle[0], lRing[0]),
-            Math.max(rThumb[0], rIndex[0], rMiddle[0], rRing[0]),
-          ];
+          return [j + 1, speed, 0, 0, lastFingerTime(L), lastFingerTime(R)];
           break;
         default:
           return "Unknown move: " + move;
@@ -1231,6 +1343,7 @@ export function algSpeed(
       }
     }
   }
+
   let tests = [
     test(splitSeq, 0, 0, 0),
     test(splitSeq, 0, -1, 1 + addRegrip),
@@ -1238,6 +1351,7 @@ export function algSpeed(
     test(splitSeq, -1, 0, 1 + addRegrip),
     test(splitSeq, 1, 0, 1 + addRegrip),
   ];
+
   while (true) {
     for (let i = 0; i < tests.length; i++) {
       if (tests[i][0] == "U") {
@@ -1346,4 +1460,3 @@ export function algSpeed(
     splitSeq = splitSeq.slice(bestTest[0]);
   }
 }
-
